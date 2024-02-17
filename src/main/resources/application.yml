@@ -1,0 +1,25 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+#    url: ${DB_URL:jdbc:mariadb://mariadb-ver10-01.c3edzk8fothj.ap-northeast-2.rds.amazonaws.com:3306/ZIPSA_DEV?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true}
+#    username: ${DB_USERNAME:admin}
+#    password: ${DB_PASSWORD:na6080su12!!}
+    url: jdbc:mariadb://teamup.cdif7ibxagzt.ap-northeast-2.rds.amazonaws.com:3306/TeamUp?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
+    username: admin
+    password: na6080su12!!
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+        show_sql: true
+        format_sql: true
+    open-in-view: false
