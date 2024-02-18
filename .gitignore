@@ -38,3 +38,7 @@ out/
 gradlew
 gradlew.bat
 gradle
+
+
+### Custom ###
+*.env

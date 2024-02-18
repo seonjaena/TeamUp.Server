@@ -1,7 +1,61 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 2048MB
+      max-request-size: 2048MB
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+  logging:
+    config: classpath:logback-spring.xml
+
+  token:
+    # 5분 (1000 * 60 * 5 = 300000) / 30분 (1000 * 60 * 30 = 1800000) / 1시간 (1000 * 60 * 60 = 3600000)
+    access-expire: 1800000
+    # 1일 (1000 * 60 * 24 = 1440000) / 1달 (1000 * 60 * 24 * 31 = 44640000)
+    refresh-expire: 1440000
+
+---
+spring:
   config:
     activate:
       on-profile: dev
+
+  security:
+    user:
+      name: ${DEFAULT_AUTH_USERNAME}
+      password: ${DEFAULT_AUTH_PASSWORD}
+
+  datasource:
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/TeamUp?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+        show_sql: true
+        format_sql: true
+    open-in-view: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  security:
+    user:
+      name: ${DEFAULT_AUTH_USERNAME}
+      password: ${DEFAULT_AUTH_PASSWORD}
 
   datasource:
     url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/TeamUp?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
