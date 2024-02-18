@@ -1,4 +1,4 @@
-FROM gradle:7.6.4-jdk17-alpine as Builder
+FROM gradle:8.6.0-jdk21-alpine as Builder
 
 WORKDIR /usr/local/TeamUp.Server
 
@@ -10,7 +10,7 @@ RUN ./gradlew clean build -x test && \
     mv build/libs/teamup-*.jar teamup.jar
 
 
-FROM eclipse-temurin:17.0.10_7-jre-alpine as Production
+FROM eclipse-temurin:21.0.2_13-jre-alpine as Production
 
 ENV TZ=Asia/Seoul
 
