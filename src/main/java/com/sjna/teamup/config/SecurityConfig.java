@@ -22,7 +22,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests((authorizeRequests) ->
                         authorizeRequests
-                                .requestMatchers("/api/user*").permitAll()
+                                .requestMatchers("/api/user", "/api/user/*").hasRole("FREE")
                                 .anyRequest().authenticated()
                 )
                 .formLogin((formLogin) ->
