@@ -19,6 +19,9 @@ jwt:
     # 1일 (1000 * 60 * 24 = 1440000) / 1달 (1000 * 60 * 24 * 31 = 44640000)
     refresh: 1440000
 
+server:
+  forward-headers-strategy: native
+
 ---
 spring:
   config:
