@@ -32,11 +32,14 @@ public class User {
     private String nickname;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ROLE", foreignKey = @ForeignKey(value = ConstraintMode.CONSTRAINT))
+    @JoinColumn(name = "ROLE", foreignKey = @ForeignKey(value = ConstraintMode.CONSTRAINT))     // RDBMS에서 외래키를 설정하기 위해서 사용 (NO_CONSTRAINT: 논리적으로만 연관관계 매핑)
     private UserRole role;
 
     @Column(name = "STATUS")
     @Convert(converter = USER_STATUS.Converter.class)
     private USER_STATUS status;
+
+    @Column(name = "REFRESH_TOKEN", length = 100)
+    private String refreshToken;
 
 }

@@ -20,7 +20,7 @@ jwt:
     refresh: 1440000
 
 server:
-  forward-headers-strategy: native
+  forward-headers-strategy: native    # HttpServletRequest.getRemoteAddr()을 통해 X-Forwarded-For 헤더 정보를 가져오기 위함
 
 ---
 spring:

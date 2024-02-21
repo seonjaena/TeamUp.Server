@@ -2,7 +2,8 @@ package com.sjna.teamup.security;
 
 import com.sjna.teamup.dto.JwtDto;
 import com.sjna.teamup.exception.UnAuthenticatedException;
-import com.sjna.teamup.service.UserDetailService;
+import com.sjna.teamup.exception.UnAuthorizedException;
+import com.sjna.teamup.service.UserService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -24,9 +25,9 @@ public class JwtProvider {
 
     private final Key key;
     private final Header header;
-    private final UserDetailService userDetailService;
+    private final UserService userService;
     private final static String AUTHORIZATION_HEADER = "Authorization";
-    private final static String BEARER_PREFIX = "Bearer ";
+    private final static String BEARER_PREFIX = "Bearer-";
     private final static String ROLES = "roles";
 
     @Value("${jwt.expire.access}")
@@ -35,14 +36,14 @@ public class JwtProvider {
     @Value("${jwt.expire.refresh}")
     private Long refreshTokenExpireMilliSec;
 
-    public JwtProvider(@Value("${jwt.secret}") String secretKey, UserDetailService userDetailService) {
+    public JwtProvider(@Value("${jwt.secret}") String secretKey, UserService userService) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         Jwts.HeaderBuilder header = Jwts.header();
         header.setType(Header.TYPE);
         header.setType(Header.JWT_TYPE);
         this.header = header.build();
-        this.userDetailService = userDetailService;
+        this.userService = userService;
     }
 
     /**
@@ -70,31 +71,64 @@ public class JwtProvider {
         return createAccessToken(userId, roles, new Date());
     }
 
-    public Authentication getAuthentication(String token) {
+    /**
+     * JWT를 사용하여 사용자에 대해서 검증 (Authentication, Authorization)
+     * @param token
+     * @return
+     */
+    public Authentication getAuthUserInfo(String token) {
         Claims claims = parseClaims(token);
-        if(claims.get(ROLES) == null) {
-            throw new UnAuthenticatedException("접근 권한이 없습니다.");
+        String userId = claims.getSubject();
+
+        // token에 userId 정보가 있는지 확인
+        if(!StringUtils.hasText(userId)) {
+            throw new UnAuthenticatedException("User Id is not exist in token.");
         }
-        String subject = claims.getSubject();
-        UserDetails authUser = userDetailService.loadUserByUsername(subject);
+
+        // token에 사용자 권한에 대한 정보가 있는지 확인
+        if(claims.get(ROLES) == null) {
+            throw new UnAuthorizedException("User is not authorized. userId=" + userId);
+        }
+
+
+        UserDetails authUser = userService.loadUserByUsername(userId);
+
         return new UsernamePasswordAuthenticationToken(authUser, "", authUser.getAuthorities());
     }
 
+    /**
+     * 사용자의 요청의 헤더에서 JWT를 추출
+     * @param request
+     * @return
+     */
     public String parseToken(HttpServletRequest request) {
         String authorization = request.getHeader(AUTHORIZATION_HEADER);
 
-        if(StringUtils.hasText(authorization) && StringUtils.hasText(BEARER_PREFIX) && authorization.startsWith(BEARER_PREFIX)) {
+        if(StringUtils.hasText(authorization) && authorization.startsWith(BEARER_PREFIX)) {
             return authorization.substring(BEARER_PREFIX.length());
         }else {
             throw new UnAuthenticatedException("User is not authenticated. ip=" + request.getRemoteAddr());
         }
     }
 
-    public boolean validateToken(String token) {
-        if(parseClaims(token).getExpiration().before(new Date())) {
-            throw new JwtException("JWT Token is expired");
-        }
-        return true;
+    /**
+     * 사용자의 JWT의 만료 여부를 반환
+     * @param token
+     * @return
+     */
+    public boolean isTokenExpired(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getExpiration().before(new Date());
+    }
+
+    /**
+     * JWT에서 사용자 ID를 추출
+     * @param token
+     * @return
+     */
+    public String getUserId(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getSubject();
     }
 
     private String createAccessToken(String userId, List<String> roles, Date now) {
@@ -120,6 +154,9 @@ public class JwtProvider {
     }
 
     private Claims parseClaims(String token) {
+        if(!StringUtils.hasText(token)) {
+            throw new UnAuthenticatedException("token is not exist.");
+        }
         return Jwts.parser()
                 .verifyWith((SecretKey) key)
                 .build()
