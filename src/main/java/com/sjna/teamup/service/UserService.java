@@ -23,6 +23,7 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
 
     public User getUser(String userId) {
+        // TODO: UsernameNotFoundException 에러 처리 코드 추가 필요. UserNotFoundException은 401인지 403인지 다른 에러로 처리할 지 고민 필요.
         return userRepository.findByIdAndStatus(userId, USER_STATUS.NORMAL).
                 orElseThrow(() -> new UsernameNotFoundException("Can't find userId. userId=" + userId));
     }
@@ -35,11 +36,6 @@ public class UserService implements UserDetailsService {
         roles.add(new SimpleGrantedAuthority(user.getRole().getName()));
 
         return new AuthUser(user.getId(), user.getPw(), roles, user);
-    }
-
-    public String getRefreshToken(String userId) {
-        User user = getUser(userId);
-        return user.getRefreshToken();
     }
 
 }

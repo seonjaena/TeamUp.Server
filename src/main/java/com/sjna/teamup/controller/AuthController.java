@@ -1,6 +1,7 @@
 package com.sjna.teamup.controller;
 
-import com.sjna.teamup.dto.request.LoginDto;
+import com.sjna.teamup.dto.JwtDto;
+import com.sjna.teamup.dto.request.Login;
 import com.sjna.teamup.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +19,8 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping
-    public void login(@RequestBody LoginDto loginDto) {
-
+    public JwtDto login(@RequestBody Login loginRequestDto) {
+        return authService.login(loginRequestDto);
     }
 
 }

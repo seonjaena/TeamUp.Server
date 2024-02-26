@@ -1,7 +1,6 @@
-package com.sjna.teamup.security;
+package com.sjna.teamup.filter;
 
-import com.sjna.teamup.exception.JwtExpirationException;
-import com.sjna.teamup.exception.UnAuthenticatedException;
+import com.sjna.teamup.security.JwtProvider;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -16,6 +16,7 @@ import java.io.IOException;
 
 @Slf4j
 @RequiredArgsConstructor
+@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
@@ -28,11 +29,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Authentication authentication = jwtProvider.getAuthUserInfo(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-//        else if(!StringUtils.hasText(token)) {
-//            throw new UnAuthenticatedException("JWT is not exist. ip=" + request.getRemoteAddr());
-//        }else if(!isTokenExpired) {
-//            throw new JwtExpirationException("JWT is expired. userId=" + jwtProvider.getUserId(token));
-//        }
 
         chain.doFilter(request, response);
     }

@@ -27,7 +27,7 @@ public class JwtProvider {
     private final Header header;
     private final UserService userService;
     private final static String AUTHORIZATION_HEADER = "Authorization";
-    private final static String BEARER_PREFIX = "Bearer-";
+    private final static String BEARER_PREFIX = "Bearer";
     private final static String ROLES = "roles";
 
     @Value("${jwt.expire.access}")
@@ -98,6 +98,7 @@ public class JwtProvider {
 
     /**
      * 사용자의 요청의 헤더에서 JWT를 추출
+     * TODO: null도 리턴하기 때문에 Optional로 감싸는 것이 좋아 보임.
      * @param request
      * @return
      */
@@ -105,10 +106,9 @@ public class JwtProvider {
         String authorization = request.getHeader(AUTHORIZATION_HEADER);
 
         if(StringUtils.hasText(authorization) && authorization.startsWith(BEARER_PREFIX)) {
-            return authorization.substring(BEARER_PREFIX.length());
-        }else {
-            throw new UnAuthenticatedException("User is not authenticated. ip=" + request.getRemoteAddr());
+            return authorization.substring(7);
         }
+        return null;
     }
 
     /**

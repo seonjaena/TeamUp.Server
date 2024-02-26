@@ -1,7 +1,8 @@
 package com.sjna.teamup.config;
 
-import com.sjna.teamup.security.JwtAuthenticationFilter;
-import com.sjna.teamup.security.JwtProvider;
+import com.sjna.teamup.filter.JwtAuthenticationFilter;
+import com.sjna.teamup.security.CustomAccessDeniedHandler;
+import com.sjna.teamup.security.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,11 +18,14 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@RequiredArgsConstructor
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtProvider jwtProvider;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -47,9 +51,14 @@ public class SecurityConfig {
                 .httpBasic((httpBasic) ->
                         httpBasic.disable()
                 )
+                .exceptionHandling((exceptionHandler) ->
+                        exceptionHandler
+                                .authenticationEntryPoint(authenticationEntryPoint)
+                                .accessDeniedHandler(accessDeniedHandler)
+                )
                 ;
 
-        http.addFilterBefore(new JwtAuthenticationFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
