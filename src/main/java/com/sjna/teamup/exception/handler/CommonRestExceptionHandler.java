@@ -6,6 +6,7 @@ import com.sjna.teamup.exception.UnAuthorizedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class CommonRestExceptionHandler {
 
-    @ExceptionHandler(value = UnAuthenticatedException.class)
+    @ExceptionHandler(value = { UnAuthenticatedException.class, UsernameNotFoundException.class })
     public ResponseEntity unAuthenticatedException(UnAuthenticatedException e) {
         /**
          * TODO: 401 에러 코드는 인증에 대한 에러지만 code는 UNAUTHORIZED. 이 이유를 확인해보고 만약 내가 틀리게 사용하고 있다면 해결해야 함.

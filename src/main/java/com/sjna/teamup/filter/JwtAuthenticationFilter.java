@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -23,7 +24,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
-        String token = jwtProvider.parseToken(request);
+        String token = jwtProvider.parseToken(request)
+                .orElse("");
 
         if(StringUtils.hasText(token) && !jwtProvider.isTokenExpired(token)) {
             Authentication authentication = jwtProvider.getAuthUserInfo(token);

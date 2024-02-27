@@ -19,6 +19,7 @@ import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class JwtProvider {
@@ -98,17 +99,17 @@ public class JwtProvider {
 
     /**
      * 사용자의 요청의 헤더에서 JWT를 추출
-     * TODO: null도 리턴하기 때문에 Optional로 감싸는 것이 좋아 보임.
+     * null도 리턴하기 때문에 Optional로 감싼다.
      * @param request
      * @return
      */
-    public String parseToken(HttpServletRequest request) {
+    public Optional<String> parseToken(HttpServletRequest request) {
         String authorization = request.getHeader(AUTHORIZATION_HEADER);
 
         if(StringUtils.hasText(authorization) && authorization.startsWith(BEARER_PREFIX)) {
-            return authorization.substring(7);
+            return Optional.of(authorization.substring(7));
         }
-        return null;
+        return Optional.ofNullable(null);
     }
 
     /**
