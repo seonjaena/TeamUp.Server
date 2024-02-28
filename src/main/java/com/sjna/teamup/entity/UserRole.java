@@ -21,4 +21,7 @@ public class UserRole {
     @Column(name = "NAME", length = 100)
     private String name;
 
+    @Column(name = "PRIORITY")
+    private Integer priority;
+
 }
