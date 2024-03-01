@@ -47,8 +47,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests((authorizeRequests) ->
                         authorizeRequests
-                                .requestMatchers("/api/user", "/api/user/*").hasAuthority("PRIVATE_BRONZE")
-                                .requestMatchers("/api/auth", "/api/auth/*").permitAll()
+                                .requestMatchers("/user", "/user/*").hasAuthority("PRIVATE_BRONZE")
+                                .requestMatchers("/auth", "/auth/*").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .formLogin((formLogin) ->

@@ -14,7 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
 import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
@@ -41,8 +40,7 @@ public class JwtProvider {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         Jwts.HeaderBuilder header = Jwts.header();
-        header.setType(Header.TYPE);
-        header.setType(Header.JWT_TYPE);
+        header.setType("JWT");
         this.header = header.build();
         this.userService = userService;
     }
@@ -132,6 +130,11 @@ public class JwtProvider {
         return claims.getSubject();
     }
 
+    public List<String> getUserRoles(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get(ROLES, List.class);
+    }
+
     private String createAccessToken(String userId, List<String> roles, Date now) {
         return Jwts.builder()
                 .setHeader(header)
@@ -154,7 +157,7 @@ public class JwtProvider {
                 .compact();
     }
 
-    private Claims parseClaims(String token) {
+    public Claims parseClaims(String token) {
         if(!StringUtils.hasText(token)) {
             throw new UnAuthenticatedException("token is not exist.");
         }

@@ -1,7 +1,7 @@
 package com.sjna.teamup.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sjna.teamup.dto.response.Exception;
+import com.sjna.teamup.dto.response.ExceptionResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,6 +36,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
         response.setCharacterEncoding("UTF-8");
         response.getWriter()
-                .write(objectMapper.writeValueAsString(new Exception(HttpStatus.UNAUTHORIZED.value(), "UnAuthenticated", authException.getMessage())));
+                .write(objectMapper.writeValueAsString(new ExceptionResponse(HttpStatus.UNAUTHORIZED.value(), "UnAuthenticated", authException.getMessage())));
     }
 }

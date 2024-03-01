@@ -5,10 +5,9 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class Exception {
+public class LoginResponse {
 
-    private int code;
-    private String commonReason;
-    private String customReason;
+    private String accessToken;
+    private String refreshTokenIdxHash;
 
 }
