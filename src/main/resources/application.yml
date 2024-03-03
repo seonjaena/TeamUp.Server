@@ -53,6 +53,10 @@ spring:
         format_sql: true
     open-in-view: false
 
+aws:
+  ses:
+    send-email: ${SES_SEND_EMAIL}
+
 ---
 spring:
   config:
@@ -81,3 +85,7 @@ spring:
         show_sql: true
         format_sql: true
     open-in-view: false
+
+aws:
+  ses:
+    send-email: ${SES_SEND_EMAIL}

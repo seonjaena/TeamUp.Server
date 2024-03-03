@@ -2,14 +2,11 @@ package com.sjna.teamup.entity;
 
 import com.sjna.teamup.entity.enums.USER_STATUS;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -45,8 +42,27 @@ public class User implements UserDetails {
     @Convert(converter = USER_STATUS.Converter.class)
     private USER_STATUS status;
 
-    @Column(name = "REFRESH_TOKEN", length = 100)
-    private String refreshToken;
+    @Column(name = "NAME", length = 100)
+    private String name;
+
+    @Column(name = "BIRTH")
+    private LocalDate birth;
+
+    @Column(name = "PHONE", length = 20)
+    private String phone;
+
+    @Builder
+    public User(String id, String pw, String email, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone) {
+        this.id = id;
+        this.pw = pw;
+        this.email = email;
+        this.nickname = nickname;
+        this.role = role;
+        this.status = status;
+        this.name = name;
+        this.birth = birth;
+        this.phone = phone;
+    }
 
     /**
      * UserDetails 상속 받아서 생기는 코드

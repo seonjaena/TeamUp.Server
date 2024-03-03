@@ -1,6 +1,7 @@
 package com.sjna.teamup.exception.handler;
 
 import com.sjna.teamup.dto.response.ExceptionResponse;
+import com.sjna.teamup.exception.SendEmailFailureException;
 import com.sjna.teamup.exception.UnAuthenticatedException;
 import com.sjna.teamup.exception.UnAuthorizedException;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +34,17 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse(HttpStatus.FORBIDDEN.value(), "Unauthorized", e.getMessage()));
     }
 
+    @ExceptionHandler(value = SendEmailFailureException.class)
+    public ResponseEntity sendEmailFailureException(SendEmailFailureException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed To Send Email", e.getMessage()));
+    }
+
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity unknownException(Exception e) {
         log.error(e.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), e.getMessage()));
+                .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), "Internal Server Error occurred"));
     }
 
 }
