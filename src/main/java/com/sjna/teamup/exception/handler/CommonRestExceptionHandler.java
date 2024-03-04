@@ -4,7 +4,10 @@ import com.sjna.teamup.dto.response.ExceptionResponse;
 import com.sjna.teamup.exception.SendEmailFailureException;
 import com.sjna.teamup.exception.UnAuthenticatedException;
 import com.sjna.teamup.exception.UnAuthorizedException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,8 +15,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
+@RequiredArgsConstructor
 @RestControllerAdvice
 public class CommonRestExceptionHandler {
+
+    private final MessageSource messageSource;
 
     @ExceptionHandler(value = { UnAuthenticatedException.class, UsernameNotFoundException.class })
     public ResponseEntity unAuthenticatedException(UnAuthenticatedException e) {
@@ -44,7 +50,13 @@ public class CommonRestExceptionHandler {
     public ResponseEntity unknownException(Exception e) {
         log.error(e.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), "Internal Server Error occurred"));
+                .body(new ExceptionResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                        messageSource.getMessage("error.common.500",
+                                new String[] {},
+                                LocaleContextHolder.getLocale())
+                ));
     }
 
 }

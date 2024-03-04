@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
@@ -26,6 +28,7 @@ import java.io.IOException;
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper;
+    private final MessageSource messageSource;
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
@@ -36,6 +39,14 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
         response.setCharacterEncoding("UTF-8");
         response.getWriter()
-                .write(objectMapper.writeValueAsString(new ExceptionResponse(HttpStatus.UNAUTHORIZED.value(), "UnAuthenticated", authException.getMessage())));
+                .write(objectMapper.writeValueAsString(
+                        new ExceptionResponse(
+                                HttpStatus.UNAUTHORIZED.value(),
+                                "UnAuthenticated",
+                                messageSource.getMessage("error.common.401",
+                                        new String[] {request.getRemoteAddr(), request.getRequestURI()},
+                                        LocaleContextHolder.getLocale()) + authException.getMessage())
+                        )
+                );
     }
 }

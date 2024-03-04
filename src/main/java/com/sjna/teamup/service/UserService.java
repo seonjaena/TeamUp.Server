@@ -10,6 +10,8 @@ import com.sjna.teamup.repository.UserRoleRepository;
 import com.sjna.teamup.security.AuthUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,6 +32,7 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MessageSource messageSource;
 
     @Override
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
@@ -43,14 +46,24 @@ public class UserService implements UserDetailsService {
 
     public User getUser(String userId) {
         return userRepository.findByIdAndStatus(userId, USER_STATUS.NORMAL).
-                orElseThrow(() -> new UsernameNotFoundException("Can't find userId. userId=" + userId));
+                orElseThrow(() -> new UsernameNotFoundException(
+                        messageSource.getMessage("error.user-id-pw.incorrect",
+                                new String[] {},
+                                LocaleContextHolder.getLocale())
+                        )
+                );
     }
 
     @Transactional
     public void signUp(SignUpRequest signUpRequest) {
 
         UserRole basicRole = userRoleRepository.findAll(Sort.by(Sort.Direction.DESC, "priority")).stream().findFirst()
-                .orElseThrow(() -> new UserRoleNotExistException("System doesn't have role. Please add role."));
+                .orElseThrow(() -> new UserRoleNotExistException(
+                        messageSource.getMessage("error.common.500",
+                                new String[] {},
+                                LocaleContextHolder.getLocale()
+                        )
+                ));
 
         User user = User.builder()
                 .id(signUpRequest.getUserId())

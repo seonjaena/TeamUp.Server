@@ -13,6 +13,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,12 +35,18 @@ public class AuthService {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final MessageSource messageSource;
 
     @Transactional
     public LoginResponse login(LoginRequest loginRequestDto) throws NoSuchAlgorithmException {
         User dbUser = userService.getUser(loginRequestDto.getUserId());
         if(!passwordEncoder.matches(loginRequestDto.getUserPw(), dbUser.getPw())) {
-            throw new UnAuthenticatedException("Password is incorrect. userId = " + loginRequestDto.getUserId());
+            log.warn("Password is incorrect. userId={}", loginRequestDto.getUserId());
+            throw new UnAuthenticatedException(
+                    messageSource.getMessage("error.password.incorrect",
+                            new String[] {},
+                            LocaleContextHolder.getLocale())
+            );
         }
 
         JwtDto jwt = jwtProvider.createToken(dbUser.getId(), List.of(dbUser.getRole().getName()));
@@ -58,7 +66,11 @@ public class AuthService {
 
     public String refreshAccessToken(String refreshTokenIdxHash) {
         UserRefreshToken refreshToken = userRefreshTokenRepository.findByIdxHash(refreshTokenIdxHash)
-                .orElseThrow(() -> new UnAuthenticatedException("token is invalidate"));
+                .orElseThrow(() -> new UnAuthenticatedException(
+                        messageSource.getMessage("notice.re-login.request",
+                                new String[] {},
+                                LocaleContextHolder.getLocale())
+                ));
 
         String userId = jwtProvider.getUserId(refreshToken.getValue());
         List<String> userRoles = jwtProvider.getUserRoles(refreshToken.getValue());

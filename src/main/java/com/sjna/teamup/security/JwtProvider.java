@@ -9,6 +9,8 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,6 +28,7 @@ public class JwtProvider {
     private final Key key;
     private final Header header;
     private final UserService userService;
+    private final MessageSource messageSource;
     private final static String AUTHORIZATION_HEADER = "Authorization";
     private final static String BEARER_PREFIX = "Bearer";
     private final static String ROLES = "roles";
@@ -36,13 +39,14 @@ public class JwtProvider {
     @Value("${jwt.expire.refresh}")
     private Long refreshTokenExpireMilliSec;
 
-    public JwtProvider(@Value("${jwt.secret}") String secretKey, UserService userService) {
+    public JwtProvider(@Value("${jwt.secret}") String secretKey, UserService userService, MessageSource messageSource) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         Jwts.HeaderBuilder header = Jwts.header();
         header.setType("JWT");
         this.header = header.build();
         this.userService = userService;
+        this.messageSource = messageSource;
     }
 
     /**
@@ -81,12 +85,22 @@ public class JwtProvider {
 
         // token에 userId 정보가 있는지 확인
         if(!StringUtils.hasText(userId)) {
-            throw new UnAuthenticatedException("User Id is not exist in token.");
+            throw new UnAuthenticatedException(
+                    messageSource.getMessage("notice.re-login.request",
+                            new String[] {},
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
 
         // token에 사용자 권한에 대한 정보가 있는지 확인
         if(claims.get(ROLES) == null) {
-            throw new UnAuthorizedException("User is not authorized. userId=" + userId);
+            throw new UnAuthorizedException(
+                    messageSource.getMessage("notice.re-login.request",
+                            new String[] {},
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
 
 
@@ -159,7 +173,12 @@ public class JwtProvider {
 
     public Claims parseClaims(String token) {
         if(!StringUtils.hasText(token)) {
-            throw new UnAuthenticatedException("token is not exist.");
+            throw new UnAuthenticatedException(
+                    messageSource.getMessage("notice.re-login.request",
+                            new String[] {},
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
         return Jwts.parser()
                 .verifyWith((SecretKey) key)

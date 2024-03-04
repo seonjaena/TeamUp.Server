@@ -6,6 +6,8 @@ import com.sjna.teamup.exception.SendEmailFailureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.List;
 public class EmailSender {
 
     private final AmazonSimpleEmailService amazonSimpleEmailService;
+    private final MessageSource messageSource;
 
     @Value("${aws.ses.send-email}")
     private String sendEmail;
@@ -39,11 +42,21 @@ public class EmailSender {
                     .sendEmail(sendEmailRequest);
 
             if (sendEmailResult.getSdkHttpMetadata().getHttpStatusCode() != HttpStatus.OK.value()) {
-                throw new SendEmailFailureException("failed to send email. target email=" + to.toString());
+                throw new SendEmailFailureException(
+                        messageSource.getMessage("error.send-email.fail",
+                                new String[] {to.toString()},
+                                LocaleContextHolder.getLocale()
+                        )
+                );
             }
         }catch(AmazonSimpleEmailServiceException e) {
             log.error(e.getMessage());
-            throw new SendEmailFailureException("Failed to send email. target email=" + to.toString());
+            throw new SendEmailFailureException(
+                    messageSource.getMessage("error.send-email.fail",
+                            new String[] {to.toString()},
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
     }
 

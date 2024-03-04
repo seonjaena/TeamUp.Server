@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,6 +26,7 @@ import java.io.IOException;
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
     private final ObjectMapper objectMapper;
+    private final MessageSource messageSource;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
@@ -34,7 +37,14 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
         response.setCharacterEncoding("UTF-8");
         response.getWriter()
-                .write(objectMapper.writeValueAsString(new ExceptionResponse(HttpStatus.FORBIDDEN.value(), "Unauthorized", accessDeniedException.getMessage())));
-
+                .write(objectMapper.writeValueAsString(
+                        new ExceptionResponse(
+                                HttpStatus.FORBIDDEN.value(),
+                                "Unauthorized",
+                                messageSource.getMessage("error.common.403",
+                                        new String[]{},
+                                        LocaleContextHolder.getLocale()) + accessDeniedException.getMessage())
+                        )
+                );
     }
 }

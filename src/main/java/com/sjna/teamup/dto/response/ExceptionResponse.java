@@ -8,7 +8,7 @@ import lombok.Data;
 public class ExceptionResponse {
 
     private int code;
-    private String commonReason;
-    private String customReason;
+    private String type;
+    private String reason;
 
 }
