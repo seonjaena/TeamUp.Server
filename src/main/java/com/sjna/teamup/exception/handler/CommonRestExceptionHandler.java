@@ -11,8 +11,12 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -21,6 +25,7 @@ public class CommonRestExceptionHandler {
 
     private final MessageSource messageSource;
 
+    @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(value = { UnAuthenticatedException.class, UsernameNotFoundException.class })
     public ResponseEntity unAuthenticatedException(UnAuthenticatedException e) {
         /**
@@ -31,6 +36,7 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse(HttpStatus.UNAUTHORIZED.value(), "Unauthenticated", e.getMessage()));
     }
 
+    @ResponseStatus(value = HttpStatus.FORBIDDEN)
     @ExceptionHandler(value = UnAuthorizedException.class)
     public ResponseEntity unAuthorizedException(UnAuthorizedException e) {
         /**
@@ -40,12 +46,30 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse(HttpStatus.FORBIDDEN.value(), "Unauthorized", e.getMessage()));
     }
 
+    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = SendEmailFailureException.class)
     public ResponseEntity sendEmailFailureException(SendEmailFailureException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed To Send Email", e.getMessage()));
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = MethodArgumentNotValidException.class)
+    public ResponseEntity methodArgumentNotValidException(MethodArgumentNotValidException e) {
+        List<ObjectError> errors = e.getBindingResult().getAllErrors();
+        String errorMsgCode = errors.get(0).getDefaultMessage();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                        HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                        messageSource.getMessage(errorMsgCode,
+                                new String[] {},
+                                LocaleContextHolder.getLocale())
+                        )
+                );
+    }
+
+    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity unknownException(Exception e) {
         log.error(e.getMessage());

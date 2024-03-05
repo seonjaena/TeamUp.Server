@@ -54,6 +54,10 @@ public class UserService implements UserDetailsService {
                 );
     }
 
+    public void checkUserIdAvailable() {
+
+    }
+
     @Transactional
     public void signUp(SignUpRequest signUpRequest) {
 

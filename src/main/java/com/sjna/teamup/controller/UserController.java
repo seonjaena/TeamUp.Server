@@ -20,6 +20,10 @@ public class UserController {
         return "hello";
     }
 
+    @GetMapping(value = "/userId/available/{userId}")
+    public void checkUserIdAvailable(@PathVariable(name = "userId") String userId) {
+    }
+
     @PostMapping
     public void signUp(@Valid @RequestBody SignUpRequest signUpRequest) {
         userService.signUp(signUpRequest);
