@@ -40,7 +40,7 @@ public class AuthService {
     @Transactional
     public LoginResponse login(LoginRequest loginRequestDto) throws NoSuchAlgorithmException {
         User dbUser = userService.getUser(loginRequestDto.getUserId());
-        if(!passwordEncoder.matches(loginRequestDto.getUserPw(), dbUser.getPw())) {
+        if(!passwordEncoder.matches(loginRequestDto.getUserPw(), dbUser.getAccountPw())) {
             log.warn("Password is incorrect. userId={}", loginRequestDto.getUserId());
             throw new UnAuthenticatedException(
                     messageSource.getMessage("error.password.incorrect",
@@ -49,9 +49,9 @@ public class AuthService {
             );
         }
 
-        JwtDto jwt = jwtProvider.createToken(dbUser.getId(), List.of(dbUser.getRole().getName()));
+        JwtDto jwt = jwtProvider.createToken(dbUser.getAccountId(), List.of(dbUser.getRole().getName()));
         // refresh token의 인덱스를 생성한다. (클라이언트에 전달)
-        String refreshTokenIdxHash = StringUtil.getMd5(System.currentTimeMillis() + dbUser.getId());
+        String refreshTokenIdxHash = StringUtil.getMd5(System.currentTimeMillis() + dbUser.getAccountId());
 
         // 이미 refresh token이 있다면 삭제하고 저장, 없다면 그냥 저장
         Optional<UserRefreshToken> savedRefreshToken = userRefreshTokenRepository.findByUser(dbUser);

@@ -45,7 +45,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                                 "UnAuthenticated",
                                 messageSource.getMessage("error.common.401",
                                         new String[] {request.getRemoteAddr(), request.getRequestURI()},
-                                        LocaleContextHolder.getLocale()) + authException.getMessage())
+                                        LocaleContextHolder.getLocale()))
                         )
                 );
     }

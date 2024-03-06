@@ -1,15 +1,15 @@
 package com.sjna.teamup.entity.enums;
 
-public enum USER_STATUS implements EnumFlagable<USER_STATUS> {
+public enum VERIFICATION_CODE_TYPE implements EnumFlagable<VERIFICATION_CODE_TYPE> {
 
-    NORMAL('N', "NORMAL"),
-    DELETED('D', "DELETED")
+    EMAIL('E', "EMAIL"),
+    PHONE('P', "PHONE")
     ;
 
     private final char flag;
     private final String text;
 
-    USER_STATUS(char flag, String text) {
+    VERIFICATION_CODE_TYPE(char flag, String text) {
         this.flag = flag;
         this.text = text;
     }
@@ -23,9 +23,9 @@ public enum USER_STATUS implements EnumFlagable<USER_STATUS> {
         return this.flag;
     }
 
-    public static class Converter extends EnumConverter<USER_STATUS> {
+    public static class Converter extends EnumConverter<VERIFICATION_CODE_TYPE> {
         public Converter() {
-            super(USER_STATUS.class);
+            super(VERIFICATION_CODE_TYPE.class);
         }
     }
 }

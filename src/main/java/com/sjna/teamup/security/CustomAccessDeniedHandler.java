@@ -43,7 +43,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
                                 "Unauthorized",
                                 messageSource.getMessage("error.common.403",
                                         new String[]{},
-                                        LocaleContextHolder.getLocale()) + accessDeniedException.getMessage())
+                                        LocaleContextHolder.getLocale()))
                         )
                 );
     }

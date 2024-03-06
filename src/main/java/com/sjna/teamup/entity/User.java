@@ -22,11 +22,11 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idx;
 
-    @Column(name = "ID", length = 100)
-    private String id;
+    @Column(name = "ACCOUNT_ID", length = 100)
+    private String accountId;
 
-    @Column(name = "PW", length = 100)
-    private String pw;
+    @Column(name = "ACCOUNT_PW", length = 100)
+    private String accountPw;
 
     @Column(name = "EMAIL", length = 100)
     private String email;
@@ -52,9 +52,9 @@ public class User implements UserDetails {
     private String phone;
 
     @Builder
-    public User(String id, String pw, String email, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone) {
-        this.id = id;
-        this.pw = pw;
+    public User(String accountId, String accountPw, String email, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone) {
+        this.accountId = accountId;
+        this.accountPw = accountPw;
         this.email = email;
         this.nickname = nickname;
         this.role = role;
