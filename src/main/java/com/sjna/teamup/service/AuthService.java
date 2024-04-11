@@ -3,6 +3,7 @@ package com.sjna.teamup.service;
 import com.sjna.teamup.dto.JwtDto;
 import com.sjna.teamup.dto.request.LoginRequest;
 import com.sjna.teamup.dto.response.LoginResponse;
+import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRefreshToken;
 import com.sjna.teamup.exception.UnAuthenticatedException;
@@ -49,6 +50,7 @@ public class AuthService {
             );
         }
 
+        // JWT Token 생성(Refresh, Access)
         JwtDto jwt = jwtProvider.createToken(dbUser.getAccountId(), List.of(dbUser.getRole().getName()));
         // refresh token의 인덱스를 생성한다. (클라이언트에 전달)
         String refreshTokenIdxHash = StringUtil.getMd5(System.currentTimeMillis() + dbUser.getAccountId());
@@ -64,7 +66,8 @@ public class AuthService {
         return new LoginResponse(jwt.getAccessToken(), refreshTokenIdxHash);
     }
 
-    public String refreshAccessToken(String refreshTokenIdxHash) {
+    @Transactional
+    public RefreshAccessTokenResponse refreshAccessToken(String refreshTokenIdxHash) throws NoSuchAlgorithmException {
         UserRefreshToken refreshToken = userRefreshTokenRepository.findByIdxHash(refreshTokenIdxHash)
                 .orElseThrow(() -> new UnAuthenticatedException(
                         messageSource.getMessage("notice.re-login.request",
@@ -75,7 +78,13 @@ public class AuthService {
         String userId = jwtProvider.getUserId(refreshToken.getValue());
         List<String> userRoles = jwtProvider.getUserRoles(refreshToken.getValue());
 
-        return jwtProvider.refreshAccessToken(userId, userRoles);
+        // hash만 바꿔서 DB Update 참고: https://brunch.co.kr/@anonymdevoo/37
+        String newRefreshTokenIdxHash = StringUtil.getMd5(System.currentTimeMillis() + userId);
+        refreshToken.changeIdxHash(newRefreshTokenIdxHash);
+        userRefreshTokenRepository.save(refreshToken);
+
+        // Access Token 재발급
+        return new RefreshAccessTokenResponse(jwtProvider.refreshAccessToken(userId, userRoles), newRefreshTokenIdxHash);
     }
 
 }

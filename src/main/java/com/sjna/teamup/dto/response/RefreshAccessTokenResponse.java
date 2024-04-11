@@ -5,9 +5,9 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ExceptionResponse {
+public class RefreshAccessTokenResponse {
 
-    private String type;
-    private String message;
+    private String accessToken;
+    private String refreshTokenIdxHash;
 
 }

@@ -40,9 +40,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setCharacterEncoding("UTF-8");
         response.getWriter()
                 .write(objectMapper.writeValueAsString(
-                        new ExceptionResponse(
-                                HttpStatus.UNAUTHORIZED.value(),
-                                "UnAuthenticated",
+                        new ExceptionResponse("UnAuthenticated",
                                 messageSource.getMessage("error.common.401",
                                         new String[] {request.getRemoteAddr(), request.getRequestURI()},
                                         LocaleContextHolder.getLocale()))

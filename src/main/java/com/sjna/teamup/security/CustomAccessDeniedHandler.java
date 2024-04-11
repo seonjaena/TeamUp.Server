@@ -38,9 +38,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         response.setCharacterEncoding("UTF-8");
         response.getWriter()
                 .write(objectMapper.writeValueAsString(
-                        new ExceptionResponse(
-                                HttpStatus.FORBIDDEN.value(),
-                                "Unauthorized",
+                        new ExceptionResponse("Unauthorized",
                                 messageSource.getMessage("error.common.403",
                                         new String[]{},
                                         LocaleContextHolder.getLocale()))

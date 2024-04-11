@@ -33,7 +33,7 @@ public class CommonRestExceptionHandler {
          * TODO: 401 에러 타입은 Unauthorized. 하지만 401은 인증에 대한 내용을 담고 싶기 때문에 임의로 타입 변경. 이게 옳은지 확인.
          */
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ExceptionResponse(HttpStatus.UNAUTHORIZED.value(), "Unauthenticated", e.getMessage()));
+                .body(new ExceptionResponse("Unauthenticated", e.getMessage()));
     }
 
     @ResponseStatus(value = HttpStatus.FORBIDDEN)
@@ -43,14 +43,14 @@ public class CommonRestExceptionHandler {
          * TODO: 403의 에러 메시지는 Forbidden. 하지만 403은 인가에 대한 내용을 담고 싶기 때문에 임의로 타입 변경. 이게 옳은지 확인. 또한 FORBIDDEN 의미 조사 필요.
          */
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ExceptionResponse(HttpStatus.FORBIDDEN.value(), "Unauthorized", e.getMessage()));
+                .body(new ExceptionResponse("Unauthorized", e.getMessage()));
     }
 
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = SendEmailFailureException.class)
     public ResponseEntity sendEmailFailureException(SendEmailFailureException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed To Send Email", e.getMessage()));
+                .body(new ExceptionResponse("Failed To Send Email", e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -60,8 +60,7 @@ public class CommonRestExceptionHandler {
         String errorMsgCode = errors.get(0).getDefaultMessage();
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
-                        HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                .body(new ExceptionResponse(HttpStatus.BAD_REQUEST.getReasonPhrase(),
                         messageSource.getMessage(errorMsgCode,
                                 new String[] {},
                                 LocaleContextHolder.getLocale())
@@ -74,9 +73,7 @@ public class CommonRestExceptionHandler {
     public ResponseEntity unknownException(Exception e) {
         log.error(e.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ExceptionResponse(
-                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                        HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                         messageSource.getMessage("error.common.500",
                                 new String[] {},
                                 LocaleContextHolder.getLocale())

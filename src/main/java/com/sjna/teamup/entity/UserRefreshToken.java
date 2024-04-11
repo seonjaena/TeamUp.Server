@@ -34,4 +34,8 @@ public class UserRefreshToken {
         return token;
     }
 
+    public void changeIdxHash(String idxHash) {
+        this.idxHash = idxHash;
+    }
+
 }

@@ -2,6 +2,7 @@ package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.LoginRequest;
 import com.sjna.teamup.dto.response.LoginResponse;
+import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ public class AuthController {
     }
 
     @GetMapping(value = "/renewal")
-    public String refreshAccessToken(@RequestParam(name = "refreshTokenIdxHash") String refreshTokenIdxHash) {
+    public RefreshAccessTokenResponse refreshAccessToken(@RequestParam(name = "refreshTokenIdxHash") String refreshTokenIdxHash) throws NoSuchAlgorithmException {
         return authService.refreshAccessToken(refreshTokenIdxHash);
     }
 
