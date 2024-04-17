@@ -1,9 +1,15 @@
 HELP.md
+gradle-wrapper.jar
+gradle-wrapper.properties
+gradlew
+gradlew.bat
 .gradle
 build/
-!gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+
+### Querydsl
+/src/main/generated
 
 ### STS ###
 .apt_generated
@@ -35,9 +41,6 @@ out/
 
 ### VS Code ###
 .vscode/
-gradlew.bat
-gradle
 
-
-### Custom ###
+application_log
 *.env
