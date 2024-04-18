@@ -21,7 +21,7 @@ pipeline {
             steps {
 
                 ///////////////////////////////////////////////
-                // AWS 개발 ECR에 업로드
+                // AWS 개발 ECR에 업로드 test
                 ///////////////////////////////////////////////
                 script {
                     def projectVersion = sh(script: "./gradlew properties | grep -Po '(?<=version: ).*'", returnStdout: true)
