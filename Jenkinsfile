@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        gradle 'gradle-8.6'
+        jdk 'jdk-21'
+    }
+
     stages {
 
         stage('Build Docker') {
