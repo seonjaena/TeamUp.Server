@@ -30,7 +30,7 @@ pipeline {
                     VER="${projectVersion}-${env.BRANCH_NAME}"
 
                     //이미 생성된 이미지 찾기 위함
-                    builtTag = "teamup:${VER}"
+                    builtTag = "teamup.server:${VER}"
 
                     ecrRepositoryDev = "107896592142.dkr.ecr.ap-northeast-2.amazonaws.com"
                     ecrRepositoryProd = "107896592142.dkr.ecr.ap-northeast-2.amazonaws.com"
@@ -40,10 +40,10 @@ pipeline {
                     sh "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${ecrRepository}"
 
                     //태깅
-                    sh "docker tag ${builtTag} ${ecrRepository}:${builtTag}"
+                    sh "docker tag ${builtTag} ${ecrRepository}/${builtTag}"
 
                     //upload
-                    sh "docker push ${ecrRepository}:${builtTag}"
+                    sh "docker push ${ecrRepository}/${builtTag}"
                 }
             }
         }
