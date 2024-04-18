@@ -1,4 +1,4 @@
-FROM gradle:8.6.0-jdk21-alpine as Builder
+FROM gradle:8.6.0-jdk21-jammy as Builder
 
 WORKDIR /usr/local/TeamUp.Server
 
