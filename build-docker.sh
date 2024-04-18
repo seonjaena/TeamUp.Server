@@ -10,4 +10,4 @@ fi
 
 PROJECT_VER=$(./gradlew properties | grep -Po '(?<=version: ).*')
 
-docker build -t TeamUp.Server:$PROJECT_VER-$GIT_BRANCH .
+docker build -t teamup.server:$PROJECT_VER-$GIT_BRANCH .
