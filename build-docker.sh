@@ -8,7 +8,6 @@ else
   GIT_BRANCH=$(git symbolic-ref --short HEAD)
 fi
 
-PROJECT_NAME=$(./gradlew properties | grep -Po '(?<=name: ).*')
 PROJECT_VER=$(./gradlew properties | grep -Po '(?<=version: ).*')
 
-docker build -t $PROJECT_NAME:$PROJECT_VER-$GIT_BRANCH .
+docker build -t TeamUp.Server:$PROJECT_VER-$GIT_BRANCH .
