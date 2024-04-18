@@ -8,8 +8,8 @@ else
   GIT_BRANCH=$(git symbolic-ref --short HEAD)
 fi
 
-PROJECT_VER=$(./gradlew properties | grep -Po '(?<=version: ).*')
-
 gradle wrapper
+
+PROJECT_VER=$(./gradlew properties | grep -Po '(?<=version: ).*')
 
 docker build -t teamup.server:$PROJECT_VER-$GIT_BRANCH .
