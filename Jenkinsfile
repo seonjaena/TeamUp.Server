@@ -40,10 +40,10 @@ pipeline {
                     sh "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${ecrRepository}"
 
                     //태깅
-                    sh "docker tag ${builtTag} ${ecrRepository}:${builtTag}"
+                    sh "docker tag ${builtTag} ${ecrRepository}/${builtTag}"
 
                     //upload
-                    sh "docker push ${ecrRepository}:${builtTag}"
+                    sh "docker push ${ecrRepository}/${builtTag}"
                 }
             }
         }
