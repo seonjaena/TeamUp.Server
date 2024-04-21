@@ -30,11 +30,6 @@ spring:
     activate:
       on-profile: dev
 
-  security:
-    user:
-      name: ${DEFAULT_AUTH_USERNAME}
-      password: ${DEFAULT_AUTH_PASSWORD}
-
   datasource:
     url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:teamup}?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
     username: ${DB_USERNAME}
@@ -62,11 +57,6 @@ spring:
   config:
     activate:
       on-profile: docker
-
-  security:
-    user:
-      name: ${DEFAULT_AUTH_USERNAME}
-      password: ${DEFAULT_AUTH_PASSWORD}
 
   datasource:
     url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:teamup}?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
