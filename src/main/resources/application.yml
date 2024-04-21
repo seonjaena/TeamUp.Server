@@ -36,7 +36,7 @@ spring:
       password: ${DEFAULT_AUTH_PASSWORD}
 
   datasource:
-    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/TeamUp?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:teamup}?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.mariadb.jdbc.Driver
@@ -69,7 +69,7 @@ spring:
       password: ${DEFAULT_AUTH_PASSWORD}
 
   datasource:
-    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/TeamUp?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT:3306}/${DB_NAME:teamup}?characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.mariadb.jdbc.Driver

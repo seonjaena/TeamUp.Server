@@ -4,6 +4,7 @@ import com.sjna.teamup.filter.JwtAuthenticationFilter;
 import com.sjna.teamup.security.CustomAccessDeniedHandler;
 import com.sjna.teamup.security.CustomAuthenticationEntryPoint;
 import com.sjna.teamup.service.UserRoleService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,14 +13,19 @@ import org.springframework.security.access.expression.method.DefaultMethodSecuri
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.IpAddressMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
 @Configuration
 @RequiredArgsConstructor
@@ -52,6 +58,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/auth/renewal").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/user/available/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/user/verification-code").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/common/health-check").access(hasIpAddress(new String[]{"127.0.0.1", "::1"}))
                                 .anyRequest().authenticated()
                 )
                 .formLogin((formLogin) ->
@@ -100,6 +107,15 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private static AuthorizationManager<RequestAuthorizationContext> hasIpAddress(String[] ipAddress) {
+        return (authentication, object) -> {
+            HttpServletRequest request = object.getRequest();
+            boolean isAccessible = Arrays.stream(ipAddress)
+                    .anyMatch(ip -> new IpAddressMatcher(ip).matches(request));
+            return new AuthorizationDecision(isAccessible);
+        };
     }
 
 }
