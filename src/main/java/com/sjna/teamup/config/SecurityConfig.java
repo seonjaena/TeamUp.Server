@@ -58,7 +58,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/auth/renewal").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/user/available/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/user/verification-code").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/common/health-check").access(hasIpAddress(new String[]{"127.0.0.1", "::1"}))
+                                .requestMatchers(HttpMethod.GET, "/common/health-check").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .formLogin((formLogin) ->
