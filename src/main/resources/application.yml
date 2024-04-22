@@ -75,6 +75,7 @@ spring:
         show_sql: true
         format_sql: true
     open-in-view: false
+    database-platform: org.hibernate.dialect.MariaDB103Dialect
 
 aws:
   ses:
