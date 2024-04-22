@@ -19,6 +19,7 @@ WORKDIR /usr/local/TeamUp.Server
 COPY --from=Builder /usr/local/TeamUp.Server/teamup.jar ./teamup.jar
 
 RUN apk --no-cache add tzdata && \
+    apk --no-cache add curl && \
     echo $TZ > /etc/timezone && \
     apk del tzdata
 
