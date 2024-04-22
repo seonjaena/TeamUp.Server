@@ -12,4 +12,4 @@ gradle wrapper
 
 PROJECT_VER=$(./gradlew properties | grep -Po '(?<=version: ).*')
 
-docker build -t teamup.server:$PROJECT_VER-$GIT_BRANCH .
+docker buildx build --platform linux/amd64 -t teamup.server:$PROJECT_VER-$GIT_BRANCH .
