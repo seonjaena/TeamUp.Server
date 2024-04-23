@@ -28,9 +28,6 @@ public class User implements UserDetails {
     @Column(name = "ACCOUNT_PW", length = 100)
     private String accountPw;
 
-    @Column(name = "EMAIL", length = 100)
-    private String email;
-
     @Column(name = "NICKNAME", length = 100)
     private String nickname;
 
@@ -52,10 +49,9 @@ public class User implements UserDetails {
     private String phone;
 
     @Builder
-    public User(String accountId, String accountPw, String email, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone) {
+    public User(String accountId, String accountPw, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone) {
         this.accountId = accountId;
         this.accountPw = accountPw;
-        this.email = email;
         this.nickname = nickname;
         this.role = role;
         this.status = status;

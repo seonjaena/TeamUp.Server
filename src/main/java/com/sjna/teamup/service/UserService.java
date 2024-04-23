@@ -16,6 +16,7 @@ import com.sjna.teamup.security.AuthUser;
 import com.sjna.teamup.util.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Sort;
@@ -112,16 +113,15 @@ public class UserService implements UserDetailsService {
                         )
                 ));
 
+        String tempNickname = signUpRequest.getEmail().substring(0, signUpRequest.getEmail().indexOf("@")) + "_" + RandomStringUtils.randomAlphanumeric(5);
+
         User user = User.builder()
-                .accountId(signUpRequest.getUserId())
+                .accountId(signUpRequest.getEmail())
                 .accountPw(passwordEncoder.encode(signUpRequest.getUserPw()))
-                .email(signUpRequest.getEmail())
-                .nickname(signUpRequest.getUserNickname())
+                .nickname(tempNickname)
                 .role(basicRole)
                 .status(USER_STATUS.NORMAL)
                 .name(signUpRequest.getName())
-                .birth(signUpRequest.getBirth())
-                .phone(signUpRequest.getPhone())
                 .build();
 
         userRepository.save(user);

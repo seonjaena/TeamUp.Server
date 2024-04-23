@@ -43,6 +43,9 @@ dependencies {
 	// CoolSMS
 	implementation 'net.nurigo:sdk:4.3.0'
 
+	// apache common lang
+	implementation 'org.apache.commons:commons-lang3:3.14.0'
+
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
 	annotationProcessor 'org.projectlombok:lombok'
