@@ -36,7 +36,7 @@ public class UserController {
         return userService.checkUserNicknameAvailable(userNickname);
     }
 
-    @PostMapping(value = "/verification-code")
+    @GetMapping(value = "/verification-code")
     public void sendEmailVerificationCode(@RequestBody VerificationCodeRequest verificationCodeRequest) {
         userService.saveVerificationCode(verificationCodeRequest);
     }

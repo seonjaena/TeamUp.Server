@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class VerificationCodeRequest {
 
-    @Email(message = "constraint.user-email.pattern")
+    @Pattern(regexp = "^[a-zA-Z0-9+-\\_.]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]$", message = "constraint.user-email.pattern")
     private String email;
 
     @Pattern(regexp = "(010|011)-\\d{3,4}-\\d{4}", message = "constraint.user-phone.pattern")
