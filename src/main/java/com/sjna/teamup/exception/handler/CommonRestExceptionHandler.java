@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -66,6 +67,13 @@ public class CommonRestExceptionHandler {
                                 LocaleContextHolder.getLocale())
                         )
                 );
+    }
+
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(value = SerializationException.class)
+    public ResponseEntity serializationException(SerializationException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ExceptionResponse("Failed To Serialize", e.getMessage()));
     }
 
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
