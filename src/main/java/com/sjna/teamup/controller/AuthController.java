@@ -1,6 +1,7 @@
 package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.LoginRequest;
+import com.sjna.teamup.dto.request.VerificationCodeRequest;
 import com.sjna.teamup.dto.response.LoginResponse;
 import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.service.AuthService;
@@ -25,6 +26,11 @@ public class AuthController {
     @GetMapping(value = "/renewal")
     public RefreshAccessTokenResponse refreshAccessToken(@RequestParam(name = "refreshTokenIdxHash") String refreshTokenIdxHash) throws NoSuchAlgorithmException {
         return authService.refreshAccessToken(refreshTokenIdxHash);
+    }
+
+    @PostMapping(value = "/email-verification")
+    public void sendEmailVerificationCode(@RequestBody VerificationCodeRequest verificationCodeRequest) {
+        authService.sendVerificationCode(verificationCodeRequest);
     }
 
 }

@@ -1,7 +1,6 @@
 package com.sjna.teamup.dto.request;
 
 import com.sjna.teamup.entity.enums.VERIFICATION_CODE_TYPE;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
@@ -15,7 +14,5 @@ public class VerificationCodeRequest {
     private String phone;
 
     private VERIFICATION_CODE_TYPE verificationCodeType;
-
-
 
 }

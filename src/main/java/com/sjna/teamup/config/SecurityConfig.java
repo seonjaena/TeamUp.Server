@@ -57,7 +57,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.POST, "/auth").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/auth/renewal").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/user/available/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/user/verification-code").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/auth/email-verification").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/common/health-check").permitAll()
                                 .anyRequest().authenticated()
                 )

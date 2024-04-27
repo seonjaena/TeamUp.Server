@@ -2,26 +2,36 @@ package com.sjna.teamup.service;
 
 import com.sjna.teamup.dto.JwtDto;
 import com.sjna.teamup.dto.request.LoginRequest;
+import com.sjna.teamup.dto.request.VerificationCodeRequest;
 import com.sjna.teamup.dto.response.LoginResponse;
 import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRefreshToken;
+import com.sjna.teamup.entity.enums.VERIFICATION_CODE_TYPE;
+import com.sjna.teamup.exception.SendEmailFailureException;
 import com.sjna.teamup.exception.UnAuthenticatedException;
+import com.sjna.teamup.exception.UnknownVerificationCodeException;
 import com.sjna.teamup.repository.UserRefreshTokenRepository;
 import com.sjna.teamup.security.JwtProvider;
+import com.sjna.teamup.sender.EmailSender;
 import com.sjna.teamup.util.StringUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -29,13 +39,18 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class AuthService {
 
+    @Value("${service.email.verification.valid-minute:10}")
+    private Integer emailVerificationValidMinute;
+
     @PersistenceContext
     private EntityManager em;
 
+    private final RedisTemplate<String, Object> redisTemplate;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final EmailSender emailSender;
     private final MessageSource messageSource;
 
     @Transactional
@@ -85,6 +100,58 @@ public class AuthService {
 
         // Access Token 재발급
         return new RefreshAccessTokenResponse(jwtProvider.refreshAccessToken(userId, userRoles), newRefreshTokenIdxHash);
+    }
+
+    @Transactional
+    public void sendVerificationCode(VerificationCodeRequest verificationCodeRequest) {
+        Locale locale = LocaleContextHolder.getLocale();
+        String verificationCode = createVerficationCode(verificationCodeRequest);
+
+        redisTemplate.execute(new SessionCallback<List<Object>>() {
+            @Override
+            public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                try {
+                    operations.multi();
+                    operations.delete("verificationCodesss_" + verificationCodeRequest.getEmail());
+                    operations.opsForValue().set("verificationCodesss_" + verificationCodeRequest.getEmail(), verificationCode);
+
+                    String emailSubject = messageSource.getMessage("email.verification.subject", null, locale);
+                    String emailBody = messageSource.getMessage("email.verification.body", new String[]{verificationCode, String.valueOf(emailVerificationValidMinute)}, locale);
+                    emailSender.sendRawEmail(List.of(verificationCodeRequest.getEmail()), emailSubject, emailBody);
+
+                    return operations.exec();
+                }catch(SendEmailFailureException e) {
+                    log.error("Failed to send verification code", e);
+                    operations.discard();
+                    return null;
+                }
+            }
+        });
+
+    }
+
+    // 이메일 혹은 휴대전화로 인증코드를 보내는 메서드
+    private String createVerficationCode(VerificationCodeRequest verificationCodeRequest) {
+        String verificationCode;
+
+        switch(verificationCodeRequest.getVerificationCodeType()) {
+            case VERIFICATION_CODE_TYPE.EMAIL:
+                verificationCodeRequest.setPhone(null);
+                verificationCode = UUID.randomUUID().toString().replace("-", "");
+                break;
+            case VERIFICATION_CODE_TYPE.PHONE:
+                verificationCodeRequest.setEmail(null);
+                verificationCode = StringUtil.getVerification6DigitCode();
+                break;
+            default:
+                throw new UnknownVerificationCodeException(messageSource.getMessage(
+                        "error.verification-code-type.unknown",
+                        new String[] {},
+                        LocaleContextHolder.getLocale())
+                );
+        }
+
+        return verificationCode;
     }
 
 }

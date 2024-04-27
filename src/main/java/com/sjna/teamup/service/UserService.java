@@ -1,19 +1,13 @@
 package com.sjna.teamup.service;
 
 import com.sjna.teamup.dto.request.SignUpRequest;
-import com.sjna.teamup.dto.request.VerificationCodeRequest;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRole;
-import com.sjna.teamup.entity.UserVerificationCode;
 import com.sjna.teamup.entity.enums.USER_STATUS;
-import com.sjna.teamup.entity.enums.VERIFICATION_CODE_TYPE;
-import com.sjna.teamup.exception.UnknownVerificationCodeException;
 import com.sjna.teamup.exception.UserRoleNotExistException;
 import com.sjna.teamup.repository.UserRepository;
 import com.sjna.teamup.repository.UserRoleRepository;
-import com.sjna.teamup.repository.UserVerificationCodeRepository;
 import com.sjna.teamup.security.AuthUser;
-import com.sjna.teamup.util.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -29,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -39,7 +32,6 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
-    private final UserVerificationCodeRepository userVerificationCodeRepository;
     private final PasswordEncoder passwordEncoder;
     private final MessageSource messageSource;
 
@@ -69,37 +61,6 @@ public class UserService implements UserDetailsService {
 
     public boolean checkUserNicknameAvailable(String userNickname) {
         return userRepository.findByNickname(userNickname).isEmpty();
-    }
-
-    @Transactional
-    public void saveVerificationCode(VerificationCodeRequest verificationCodeRequest) {
-
-        String verificationCode;
-
-        switch(verificationCodeRequest.getVerificationCodeType()) {
-            case VERIFICATION_CODE_TYPE.EMAIL:
-                verificationCodeRequest.setPhone(null);
-                verificationCode = UUID.randomUUID().toString().replace("-", "");
-                break;
-            case VERIFICATION_CODE_TYPE.PHONE:
-                verificationCodeRequest.setEmail(null);
-                verificationCode = StringUtil.getVerification6DigitCode();
-                break;
-            default:
-                throw new UnknownVerificationCodeException(messageSource.getMessage(
-                        "error.verification-code-type.unknown",
-                        new String[] {},
-                        LocaleContextHolder.getLocale())
-                );
-        }
-
-        UserVerificationCode userVerificationCode = UserVerificationCode.builder()
-                .phone(verificationCodeRequest.getPhone())
-                .email(verificationCodeRequest.getEmail())
-                .verificationCode(verificationCode)
-                .type(verificationCodeRequest.getVerificationCodeType())
-                .build();
-        userVerificationCodeRepository.save(userVerificationCode);
     }
 
     @Transactional

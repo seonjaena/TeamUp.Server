@@ -24,6 +24,11 @@ server:
   servlet:
     context-path: /teamup/api/web
 
+service:
+  email:
+    verification:
+      valid-minute: 10
+
 ---
 spring:
   config:
@@ -54,9 +59,13 @@ spring:
       host: ${REDIS_HOST}
       password: ${REDIS_PASSWORD}
 
-aws:
-  ses:
-    send-email: ${SES_SEND_EMAIL}
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    ses:
+      send-email: ${SES_SEND_EMAIL}
 
 ---
 spring:
@@ -89,6 +98,7 @@ spring:
       host: ${REDIS_HOST}
       password: ${REDIS_PASSWORD}
 
-aws:
-  ses:
-    send-email: ${SES_SEND_EMAIL}
+cloud:
+  aws:
+    ses:
+      send-email: ${SES_SEND_EMAIL}

@@ -20,7 +20,7 @@ public class EmailSender {
     private final AmazonSimpleEmailService amazonSimpleEmailService;
     private final MessageSource messageSource;
 
-    @Value("${aws.ses.send-email}")
+    @Value("${cloud.aws.ses.send-email}")
     private String sendEmail;
 
     public void sendRawEmail(List<String> to, String subject, String content) {
