@@ -6,8 +6,8 @@ COPY *.gradle gradle.* gradlew ./
 COPY gradle ./gradle
 COPY src/main ./src/main
 
-RUN ./gradlew clean build -x test && \
-    mv build/libs/teamup-*.jar teamup.jar
+RUN ./gradlew clean build -x test
+RUN mv build/libs/teamup-*.jar teamup.jar
 
 
 FROM eclipse-temurin:21.0.2_13-jre-alpine as Production
