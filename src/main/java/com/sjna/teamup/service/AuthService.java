@@ -8,9 +8,7 @@ import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRefreshToken;
 import com.sjna.teamup.entity.enums.VERIFICATION_CODE_TYPE;
-import com.sjna.teamup.exception.SendEmailFailureException;
-import com.sjna.teamup.exception.UnAuthenticatedException;
-import com.sjna.teamup.exception.UnknownVerificationCodeException;
+import com.sjna.teamup.exception.*;
 import com.sjna.teamup.repository.UserRefreshTokenRepository;
 import com.sjna.teamup.security.JwtProvider;
 import com.sjna.teamup.sender.EmailSender;
@@ -19,7 +17,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -102,18 +100,22 @@ public class AuthService {
         return new RefreshAccessTokenResponse(jwtProvider.refreshAccessToken(userId, userRoles), newRefreshTokenIdxHash);
     }
 
-    @Transactional
     public void sendVerificationCode(VerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
         String verificationCode = createVerficationCode(verificationCodeRequest);
+
+        // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
+        if(!userService.checkUserIdAvailable(verificationCodeRequest.getEmail())) {
+            throw new AlreadyUserEmailExistsException(messageSource.getMessage("error.email.already-exist", null, locale));
+        }
 
         redisTemplate.execute(new SessionCallback<List<Object>>() {
             @Override
             public List<Object> execute(RedisOperations operations) throws DataAccessException {
                 try {
                     operations.multi();
-                    operations.delete("verificationCodesss_" + verificationCodeRequest.getEmail());
-                    operations.opsForValue().set("verificationCodesss_" + verificationCodeRequest.getEmail(), verificationCode);
+                    operations.delete("verificationCode_" + verificationCodeRequest.getEmail());
+                    operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getEmail(), verificationCode);
 
                     String emailSubject = messageSource.getMessage("email.verification.subject", null, locale);
                     String emailBody = messageSource.getMessage("email.verification.body", new String[]{verificationCode, String.valueOf(emailVerificationValidMinute)}, locale);
@@ -123,11 +125,40 @@ public class AuthService {
                 }catch(SendEmailFailureException e) {
                     log.error("Failed to send verification code", e);
                     operations.discard();
-                    return null;
+                    throw e;
                 }
             }
         });
 
+    }
+
+    public void verifyVerificationCode(VerificationCodeRequest verificationCodeRequest) {
+        Locale locale = LocaleContextHolder.getLocale();
+
+        String key;
+        String verificationCode;
+
+        switch(verificationCodeRequest.getVerificationCodeType()) {
+            case VERIFICATION_CODE_TYPE.EMAIL:
+                key = "verificationCode_" + verificationCodeRequest.getEmail();
+                verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
+                break;
+            case VERIFICATION_CODE_TYPE.PHONE:
+                key = "verificationCode_" + verificationCodeRequest.getPhone();
+                verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
+                break;
+            default:
+                throw new UnknownVerificationCodeException(messageSource.getMessage(
+                        "error.verification-code-type.unknown",
+                        new String[] {},
+                        LocaleContextHolder.getLocale())
+                );
+        }
+
+        if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
+            throw new BadVerificationCodeException(messageSource.getMessage("error.email-verification-code.incorrect", null, locale));
+        }
+        redisTemplate.delete(key);
     }
 
     // 이메일 혹은 휴대전화로 인증코드를 보내는 메서드

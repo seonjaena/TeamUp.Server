@@ -37,14 +37,14 @@ public class RedisConfig {
             RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration();
             standaloneConfig.setHostName(host);
             standaloneConfig.setPort(port);
-            if(password != null && !password.isEmpty()) {
+            if(!StringUtils.isEmpty(password)) {
                 standaloneConfig.setPassword(RedisPassword.of(password));
             }
             redisConfiguration = standaloneConfig;
         }else {
             RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration();
             sentinelConfig.master(master);
-            if(password != null && !password.isEmpty()) {
+            if(!StringUtils.isEmpty(password)) {
                 sentinelConfig.setPassword(RedisPassword.of(password));
             }
             Arrays.asList(nodes.split(",")).forEach(node -> {

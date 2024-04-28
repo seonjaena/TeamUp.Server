@@ -15,4 +15,6 @@ public class VerificationCodeRequest {
 
     private VERIFICATION_CODE_TYPE verificationCodeType;
 
+    private String verificationCode;
+
 }

@@ -28,9 +28,14 @@ public class AuthController {
         return authService.refreshAccessToken(refreshTokenIdxHash);
     }
 
-    @PostMapping(value = "/email-verification")
+    @PostMapping(value = "/email-verification-code")
     public void sendEmailVerificationCode(@RequestBody VerificationCodeRequest verificationCodeRequest) {
         authService.sendVerificationCode(verificationCodeRequest);
+    }
+
+    @PatchMapping(value = "/email-verification")
+    public void verifyEmailCode(@RequestBody VerificationCodeRequest verificationCodeRequest) {
+        authService.verifyVerificationCode(verificationCodeRequest);
     }
 
 }

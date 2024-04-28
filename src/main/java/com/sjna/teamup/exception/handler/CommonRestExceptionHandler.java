@@ -1,9 +1,7 @@
 package com.sjna.teamup.exception.handler;
 
 import com.sjna.teamup.dto.response.ExceptionResponse;
-import com.sjna.teamup.exception.SendEmailFailureException;
-import com.sjna.teamup.exception.UnAuthenticatedException;
-import com.sjna.teamup.exception.UnAuthorizedException;
+import com.sjna.teamup.exception.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -67,6 +65,20 @@ public class CommonRestExceptionHandler {
                                 LocaleContextHolder.getLocale())
                         )
                 );
+    }
+
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ExceptionHandler(value = AlreadyUserEmailExistsException.class)
+    public ResponseEntity alreadyUserEmailExistsException(AlreadyUserEmailExistsException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ExceptionResponse("Email Already Exists", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = BadVerificationCodeException.class)
+    public ResponseEntity badVerificationCodeException(BadVerificationCodeException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ExceptionResponse("Bad Email Verification Code", e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
