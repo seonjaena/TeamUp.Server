@@ -17,10 +17,10 @@ public class RedisConfig {
     @Value("${spring.data.redis.host}")
     private String host;
 
-    @Value("${spring.data.redis.port}")
+    @Value("${spring.data.redis.port:#{6379}}")
     private Integer port;
 
-    @Value("${spring.data.redis.password}")
+    @Value("${spring.data.redis.password:#{null}}")
     private String password;
 
     @Value("${spring.redis.sentinel.master:#{null}}")
@@ -37,12 +37,16 @@ public class RedisConfig {
             RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration();
             standaloneConfig.setHostName(host);
             standaloneConfig.setPort(port);
-            standaloneConfig.setPassword(RedisPassword.of(password));
+            if(password != null && !password.isEmpty()) {
+                standaloneConfig.setPassword(RedisPassword.of(password));
+            }
             redisConfiguration = standaloneConfig;
         }else {
             RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration();
             sentinelConfig.master(master);
-            sentinelConfig.setPassword(RedisPassword.of(password));
+            if(password != null && !password.isEmpty()) {
+                sentinelConfig.setPassword(RedisPassword.of(password));
+            }
             Arrays.asList(nodes.split(",")).forEach(node -> {
                 String[] nodeDetails = node.split(":");
                 sentinelConfig.addSentinel(new RedisNode(nodeDetails[0], Integer.parseInt(nodeDetails[1])));

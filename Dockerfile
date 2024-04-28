@@ -6,7 +6,7 @@ COPY *.gradle gradle.* gradlew ./
 COPY gradle ./gradle
 COPY src/main ./src/main
 
-RUN ./gradlew clean build -x test
+RUN ./gradlew clean build -x test -Pprofile=docker
 RUN mv build/libs/teamup-*.jar teamup.jar
 
 
