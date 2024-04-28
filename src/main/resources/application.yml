@@ -57,7 +57,7 @@ spring:
     redis:
       port: ${REDIS_PORT:6379}
       host: ${REDIS_HOST}
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:#{null}}
 
 cloud:
   aws:
@@ -95,7 +95,7 @@ spring:
     redis:
       port: ${REDIS_PORT:6379}
       host: ${REDIS_HOST}
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:#{null}}
 
 cloud:
   aws:
