@@ -77,8 +77,15 @@ public class CommonRestExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = BadVerificationCodeException.class)
     public ResponseEntity badVerificationCodeException(BadVerificationCodeException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ExceptionResponse("Bad Email Verification Code", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = UserPwPw2DifferentException.class)
+    public ResponseEntity userPwPw2DifferentException(UserPwPw2DifferentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Pw Pw2 Different", e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

@@ -4,6 +4,8 @@ import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRole;
 import com.sjna.teamup.entity.enums.USER_STATUS;
+import com.sjna.teamup.exception.AlreadyUserEmailExistsException;
+import com.sjna.teamup.exception.UserPwPw2DifferentException;
 import com.sjna.teamup.exception.UserRoleNotExistException;
 import com.sjna.teamup.repository.UserRepository;
 import com.sjna.teamup.repository.UserRoleRepository;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -66,15 +69,25 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void signUp(SignUpRequest signUpRequest) {
 
-        UserRole basicRole = userRoleRepository.findAll(Sort.by(Sort.Direction.DESC, "priority")).stream().findFirst()
+        Locale locale = LocaleContextHolder.getLocale();
+
+        String tempNickname = signUpRequest.getEmail().substring(0, signUpRequest.getEmail().indexOf("@")) + "_" + RandomStringUtils.randomAlphanumeric(5);
+
+        if(userRepository.findByAccountId(signUpRequest.getEmail()).isPresent()) {
+            throw new AlreadyUserEmailExistsException(messageSource.getMessage("error.email.already-exist", null, locale));
+        }
+
+        if(!signUpRequest.getUserPw().equals(signUpRequest.getUserPw2())) {
+            throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
+        }
+
+        UserRole basicRole = userRoleRepository.findAll(Sort.by(Sort.Direction.ASC, "priority")).stream().findFirst()
                 .orElseThrow(() -> new UserRoleNotExistException(
                         messageSource.getMessage("error.common.500",
                                 new String[] {},
                                 LocaleContextHolder.getLocale()
                         )
                 ));
-
-        String tempNickname = signUpRequest.getEmail().substring(0, signUpRequest.getEmail().indexOf("@")) + "_" + RandomStringUtils.randomAlphanumeric(5);
 
         User user = User.builder()
                 .accountId(signUpRequest.getEmail())

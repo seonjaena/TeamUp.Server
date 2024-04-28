@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -115,7 +116,7 @@ public class AuthService {
                 try {
                     operations.multi();
                     operations.delete("verificationCode_" + verificationCodeRequest.getEmail());
-                    operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getEmail(), verificationCode);
+                    operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getEmail(), verificationCode, emailVerificationValidMinute, TimeUnit.MINUTES);
 
                     String emailSubject = messageSource.getMessage("email.verification.subject", null, locale);
                     String emailBody = messageSource.getMessage("email.verification.body", new String[]{verificationCode, String.valueOf(emailVerificationValidMinute)}, locale);
