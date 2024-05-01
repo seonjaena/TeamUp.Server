@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: h2:tcp://localhost/~/teamup
+    username: SA
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true

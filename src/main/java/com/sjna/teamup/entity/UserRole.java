@@ -1,10 +1,7 @@
 package com.sjna.teamup.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -23,5 +20,11 @@ public class UserRole {
 
     @Column(name = "PRIORITY")
     private Integer priority;
+
+    @Builder
+    public UserRole(String name, Integer priority) {
+        this.name = name;
+        this.priority = priority;
+    }
 
 }
