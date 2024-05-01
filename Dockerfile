@@ -24,4 +24,4 @@ RUN apk --no-cache add tzdata && \
     echo $TZ > /etc/timezone && \
     apk del tzdata
 
-ENTRYPOINT ["java", "$JAVA_OPTS", "-Dspring.profiles.active=docker", "-jar", "teamup.jar"]
+ENTRYPOINT ["java", "${JAVA_OPTS}", "-Dspring.profiles.active=docker", "-jar", "teamup.jar"]
