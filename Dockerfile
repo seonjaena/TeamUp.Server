@@ -13,6 +13,7 @@ RUN mv build/libs/teamup-*.jar teamup.jar
 FROM eclipse-temurin:21.0.2_13-jre-alpine as Production
 
 ENV TZ=Asia/Seoul
+ENV JAVA_OPTS=""
 
 WORKDIR /usr/local/TeamUp.Server
 
@@ -23,4 +24,4 @@ RUN apk --no-cache add tzdata && \
     echo $TZ > /etc/timezone && \
     apk del tzdata
 
-ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "teamup.jar"]
+ENTRYPOINT ["java", "$JAVA_OPTS", "-Dspring.profiles.active=docker", "-jar", "teamup.jar"]
