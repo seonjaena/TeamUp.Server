@@ -2,12 +2,11 @@ package com.sjna.teamup.service;
 
 import com.sjna.teamup.dto.JwtDto;
 import com.sjna.teamup.dto.request.LoginRequest;
-import com.sjna.teamup.dto.request.VerificationCodeRequest;
+import com.sjna.teamup.dto.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.dto.response.LoginResponse;
 import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRefreshToken;
-import com.sjna.teamup.entity.enums.VERIFICATION_CODE_TYPE;
 import com.sjna.teamup.exception.*;
 import com.sjna.teamup.repository.UserRefreshTokenRepository;
 import com.sjna.teamup.security.JwtProvider;
@@ -105,9 +104,9 @@ public class AuthService {
         return new RefreshAccessTokenResponse(jwtProvider.refreshAccessToken(userId, userRoles), newRefreshTokenIdxHash);
     }
 
-    public void sendVerificationCode(VerificationCodeRequest verificationCodeRequest) {
+    public void sendVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
-        String verificationCode = createVerficationCode(verificationCodeRequest);
+        String verificationCode = createEmailVerficationCode(verificationCodeRequest);
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
         if(!userService.checkUserIdAvailable(verificationCodeRequest.getEmail())) {
@@ -137,28 +136,14 @@ public class AuthService {
 
     }
 
-    public void verifyVerificationCode(VerificationCodeRequest verificationCodeRequest) {
+    public void verifyEmailVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
         String key;
         String verificationCode;
 
-        switch(verificationCodeRequest.getVerificationCodeType()) {
-            case VERIFICATION_CODE_TYPE.EMAIL:
-                key = "verificationCode_" + verificationCodeRequest.getEmail();
-                verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
-                break;
-            case VERIFICATION_CODE_TYPE.PHONE:
-                key = "verificationCode_" + verificationCodeRequest.getPhone();
-                verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
-                break;
-            default:
-                throw new UnknownVerificationCodeException(messageSource.getMessage(
-                        "error.verification-code-type.unknown",
-                        new String[] {},
-                        LocaleContextHolder.getLocale())
-                );
-        }
+        key = "verificationCode_" + verificationCodeRequest.getEmail();
+        verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
 
         if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
             throw new BadVerificationCodeException(messageSource.getMessage("error.email-verification-code.incorrect", null, locale));
@@ -167,25 +152,10 @@ public class AuthService {
     }
 
     // 이메일 혹은 휴대전화로 인증코드를 보내는 메서드
-    private String createVerficationCode(VerificationCodeRequest verificationCodeRequest) {
+    private String createEmailVerficationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         String verificationCode;
 
-        switch(verificationCodeRequest.getVerificationCodeType()) {
-            case VERIFICATION_CODE_TYPE.EMAIL:
-                verificationCodeRequest.setPhone(null);
-                verificationCode = UUID.randomUUID().toString().replace("-", "");
-                break;
-            case VERIFICATION_CODE_TYPE.PHONE:
-                verificationCodeRequest.setEmail(null);
-                verificationCode = StringUtil.getVerification6DigitCode();
-                break;
-            default:
-                throw new UnknownVerificationCodeException(messageSource.getMessage(
-                        "error.verification-code-type.unknown",
-                        new String[] {},
-                        LocaleContextHolder.getLocale())
-                );
-        }
+        verificationCode = UUID.randomUUID().toString().replace("-", "");
 
         return verificationCode;
     }

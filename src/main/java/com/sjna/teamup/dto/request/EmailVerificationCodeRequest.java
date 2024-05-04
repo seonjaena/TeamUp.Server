@@ -5,16 +5,10 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
-public class VerificationCodeRequest {
+public class EmailVerificationCodeRequest {
 
     @Pattern(regexp = "^[a-zA-Z0-9+-\\_.]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", message = "constraint.user-email.pattern")
     private String email;
-
-    @Pattern(regexp = "(010|011)-\\d{3,4}-\\d{4}", message = "constraint.user-phone.pattern")
-    private String phone;
-
-    private VERIFICATION_CODE_TYPE verificationCodeType;
-
     private String verificationCode;
 
 }

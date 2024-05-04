@@ -1,10 +1,11 @@
 package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.LoginRequest;
-import com.sjna.teamup.dto.request.VerificationCodeRequest;
+import com.sjna.teamup.dto.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.dto.response.LoginResponse;
 import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -24,18 +25,18 @@ public class AuthController {
     }
 
     @GetMapping(value = "/renewal")
-    public RefreshAccessTokenResponse refreshAccessToken(@RequestParam(name = "refreshTokenIdxHash") String refreshTokenIdxHash) throws NoSuchAlgorithmException {
+        public RefreshAccessTokenResponse refreshAccessToken(@RequestParam(name = "refreshTokenIdxHash") String refreshTokenIdxHash) throws NoSuchAlgorithmException {
         return authService.refreshAccessToken(refreshTokenIdxHash);
     }
 
     @PostMapping(value = "/email-verification-code")
-    public void sendEmailVerificationCode(@RequestBody VerificationCodeRequest verificationCodeRequest) {
+    public void sendEmailVerificationCode(@Valid @RequestBody EmailVerificationCodeRequest verificationCodeRequest) {
         authService.sendVerificationCode(verificationCodeRequest);
     }
 
     @PatchMapping(value = "/email-verification")
-    public void verifyEmailCode(@RequestBody VerificationCodeRequest verificationCodeRequest) {
-        authService.verifyVerificationCode(verificationCodeRequest);
+    public void verifyEmailCode(@Valid @RequestBody EmailVerificationCodeRequest verificationCodeRequest) {
+        authService.verifyEmailVerificationCode(verificationCodeRequest);
     }
 
 }
