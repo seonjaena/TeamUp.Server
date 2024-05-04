@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -49,13 +50,17 @@ public class UserService implements UserDetailsService {
     }
 
     public User getUser(String userId) {
-        return userRepository.findByAccountIdAndStatus(userId, USER_STATUS.NORMAL).
-                orElseThrow(() -> new UsernameNotFoundException(
+        return getOptionalUser(userId)
+                .orElseThrow(() -> new UsernameNotFoundException(
                         messageSource.getMessage("error.user-id-pw.incorrect",
                                 new String[] {},
                                 LocaleContextHolder.getLocale())
                         )
                 );
+    }
+
+    public Optional<User> getOptionalUser(String userId) {
+        return userRepository.findByAccountId(userId);
     }
 
     public boolean checkUserIdAvailable(String userId) {
