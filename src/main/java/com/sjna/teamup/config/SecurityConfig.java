@@ -26,11 +26,20 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
+import java.util.Map;
 
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity(securedEnabled = true, prePostEnabled = true)
 public class SecurityConfig {
+
+    private static final Map<HttpMethod, String[]> PERMIT_ALL_METHOD_URL = Map.ofEntries(
+            Map.entry(HttpMethod.GET, new String[]{"/auth/renewal", "/user/available/**", "/common/health-check"}),
+            Map.entry(HttpMethod.POST, new String[]{"/user", "/auth", "/auth/email-verification-code"}),
+            Map.entry(HttpMethod.PUT, new String[]{}),
+            Map.entry(HttpMethod.PATCH, new String[]{"/auth/email-verification"}),
+            Map.entry(HttpMethod.DELETE, new String[]{})
+    );
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
@@ -53,13 +62,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorizeRequests) ->
                         authorizeRequests
                                 .requestMatchers(HttpMethod.GET, "/user").hasAuthority("PRIVATE_BRONZE")
-                                .requestMatchers(HttpMethod.POST, "/user").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/auth").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/auth/renewal").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/user/available/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/auth/email-verification-code").permitAll()
-                                .requestMatchers(HttpMethod.PATCH, "/auth/email-verification").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/common/health-check").permitAll()
+                                .requestMatchers(HttpMethod.GET, PERMIT_ALL_METHOD_URL.get(HttpMethod.GET)).permitAll()
+                                .requestMatchers(HttpMethod.POST, PERMIT_ALL_METHOD_URL.get(HttpMethod.POST)).permitAll()
+                                .requestMatchers(HttpMethod.PUT, PERMIT_ALL_METHOD_URL.get(HttpMethod.PUT)).permitAll()
+                                .requestMatchers(HttpMethod.PATCH, PERMIT_ALL_METHOD_URL.get(HttpMethod.PATCH)).permitAll()
+                                .requestMatchers(HttpMethod.DELETE, PERMIT_ALL_METHOD_URL.get(HttpMethod.DELETE)).permitAll()
                                 .anyRequest().authenticated()
                 )
                 .formLogin((formLogin) ->
