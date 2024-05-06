@@ -34,7 +34,7 @@ import java.util.Map;
 public class SecurityConfig {
 
     private static final Map<HttpMethod, String[]> PERMIT_ALL_METHOD_URL = Map.ofEntries(
-            Map.entry(HttpMethod.GET, new String[]{"/auth/renewal", "/user/available/**", "/common/health-check"}),
+            Map.entry(HttpMethod.GET, new String[]{"/auth/renewal", "/user/available/**", "/common/health-check", "/user/link/password/*"}),
             Map.entry(HttpMethod.POST, new String[]{"/user", "/auth", "/auth/email-verification-code"}),
             Map.entry(HttpMethod.PUT, new String[]{}),
             Map.entry(HttpMethod.PATCH, new String[]{"/auth/email-verification"}),

@@ -54,9 +54,9 @@ public class AuthService {
     @Transactional
     public LoginResponse login(LoginRequest loginRequestDto) throws NoSuchAlgorithmException {
 
-        Optional<User> optionalDbUser = userService.getOptionalUser(loginRequestDto.getUserId());
+        User dbUser = userService.getUser(loginRequestDto.getUserId());
 
-        if(optionalDbUser.isEmpty() || !passwordEncoder.matches(loginRequestDto.getUserPw(), optionalDbUser.get().getAccountPw())) {
+        if(!passwordEncoder.matches(loginRequestDto.getUserPw(), dbUser.getAccountPw())) {
             log.warn("Password is incorrect. userId={}", loginRequestDto.getUserId());
             throw new UnAuthenticatedException(
                     messageSource.getMessage("error.user-id-pw.incorrect",
@@ -64,8 +64,6 @@ public class AuthService {
                             LocaleContextHolder.getLocale())
             );
         }
-
-        User dbUser = optionalDbUser.get();
 
         // JWT Token 생성(Refresh, Access)
         JwtDto jwt = jwtProvider.createToken(dbUser.getAccountId(), List.of(dbUser.getRole().getName()));

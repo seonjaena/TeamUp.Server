@@ -4,18 +4,23 @@ import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRole;
 import com.sjna.teamup.entity.enums.USER_STATUS;
-import com.sjna.teamup.exception.AlreadyUserEmailExistsException;
-import com.sjna.teamup.exception.UserPwPw2DifferentException;
-import com.sjna.teamup.exception.UserRoleNotExistException;
+import com.sjna.teamup.exception.*;
 import com.sjna.teamup.repository.UserRepository;
 import com.sjna.teamup.repository.UserRoleRepository;
 import com.sjna.teamup.security.AuthUser;
+import com.sjna.teamup.sender.EmailSender;
+import com.sjna.teamup.security.EncryptionProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,10 +28,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -34,6 +37,15 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class UserService implements UserDetailsService {
 
+    @Value("${front.base-url}")
+    private String frontBaseUrl;
+
+    @Value("${service.email.change-password.valid-minute:60}")
+    private Integer changePasswordValidMinute;
+
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final EmailSender emailSender;
+    private final EncryptionProvider encryptionProvider;
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -41,7 +53,16 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
-        User user = getUser(userId);
+        User user;
+        try {
+            user = getUser(userId);
+        }catch(UserIdNotFoundException e) {
+            throw new UsernameNotFoundException(
+                    messageSource.getMessage("error.user-id-pw.incorrect",
+                            new String[] {},
+                            LocaleContextHolder.getLocale())
+            );
+        }
 
         Collection<SimpleGrantedAuthority> roles = new ArrayList<>();
         roles.add(new SimpleGrantedAuthority(user.getRole().getName()));
@@ -51,8 +72,8 @@ public class UserService implements UserDetailsService {
 
     public User getUser(String userId) {
         return getOptionalUser(userId)
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        messageSource.getMessage("error.user-id-pw.incorrect",
+                .orElseThrow(() -> new UserIdNotFoundException(
+                        messageSource.getMessage("error.user-id.incorrect",
                                 new String[] {},
                                 LocaleContextHolder.getLocale())
                         )
@@ -104,6 +125,39 @@ public class UserService implements UserDetailsService {
                 .build();
 
         userRepository.save(user);
+    }
+
+    public void sendChangePasswordUrl(String userId) {
+        Locale locale = LocaleContextHolder.getLocale();
+        User user = getUser(userId);
+        String randomValue = UUID.randomUUID().toString();
+        String url = makeChangePasswordUrl(user.getAccountId(), randomValue);
+
+        redisTemplate.execute(new SessionCallback<List<Object>>() {
+            @Override
+            public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                try {
+                    operations.multi();
+                    operations.delete("changePwdRandomValue_" + user.getAccountId());
+                    operations.opsForValue().set("changePwdRandomValue_" + user.getAccountId(), randomValue, changePasswordValidMinute, TimeUnit.MINUTES);
+
+                    String emailSubject = messageSource.getMessage("email.changePwd.subject", null, locale);
+                    String emailBody = messageSource.getMessage("email.changePwd.body", new String[]{url, String.valueOf(changePasswordValidMinute)}, locale);
+                    emailSender.sendRawEmail(List.of(user.getAccountId()), emailSubject, emailBody);
+
+                    return operations.exec();
+                }catch(SendEmailFailureException e) {
+                    log.error("Failed to send change password link", e);
+                    operations.discard();
+                    throw e;
+                }
+            }
+        });
+    }
+
+    private String makeChangePasswordUrl(String userId, String randomValue) {
+        String encryptedUserId = encryptionProvider.encrypt(userId);
+        return String.format("%s/account/changePwd?random1=%s&random2=%s", frontBaseUrl, encryptedUserId, randomValue);
     }
 
 }

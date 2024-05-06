@@ -27,7 +27,9 @@ server:
 service:
   email:
     verification:
-      valid-minute: 10
+      valid-minute: ${EMAIL_VERIFICATION_CODE_VALID_MIN:10}
+    change-password:
+      valid-minute: ${CHANGE_PASSWORD_LINK_VALID_MIN:60}
 
 ---
 spring:
@@ -67,6 +69,8 @@ cloud:
     ses:
       send-email: ${SES_SEND_EMAIL}
 
+front:
+  base-url: ${FRONT_BASE_URL:https://together-nine.vercel.app}
 ---
 spring:
   config:
@@ -101,3 +105,6 @@ cloud:
   aws:
     ses:
       send-email: ${SES_SEND_EMAIL}
+
+front:
+  base-url: ${FRONT_BASE_URL:https://together-nine.vercel.app}

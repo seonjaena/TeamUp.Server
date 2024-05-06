@@ -40,4 +40,11 @@ public class UserController {
         userService.signUp(signUpRequest);
     }
 
+    @GetMapping(value = "/link/password/{userId}")
+    public void sendChangePasswordUrl(
+            @Pattern(regexp = "^[a-zA-Z0-9+-\\_.]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", message = "constraint.user-id.pattern")
+            @PathVariable(name = "userId") String userId) {
+        userService.sendChangePasswordUrl(userId);
+    }
+
 }
