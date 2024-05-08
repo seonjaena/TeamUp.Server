@@ -1,5 +1,6 @@
 package com.sjna.teamup.service;
 
+import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRole;
@@ -153,6 +154,47 @@ public class UserService implements UserDetailsService {
                 }
             }
         });
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest changePasswordRequest) {
+        Locale locale = LocaleContextHolder.getLocale();
+
+        String userId = encryptionProvider.decrypt(changePasswordRequest.getRandomValue1());
+        log.info("decrypted userId = {}", userId);
+
+        String randomValue = (String) redisTemplate.opsForValue().get("changePwdRandomValue_" + userId);
+
+        redisTemplate.execute(new SessionCallback<List<Object>>() {
+            @Override
+            public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                try {
+                    operations.multi();
+                    if(!Objects.equals(randomValue, changePasswordRequest.getRandomValue2())) {
+                        throw new BadUrlChangePwException(messageSource.getMessage("error.change-pw.bad-url", null, locale));
+                    }
+
+                    if(!Objects.equals(changePasswordRequest.getUserPw(), changePasswordRequest.getUserPw2())) {
+                        throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
+                    }
+
+                    operations.delete("changePwdRandomValue_" + userId);
+                    changeUserPw(userId, changePasswordRequest.getUserPw());
+
+                    return operations.exec();
+                }catch(Exception e) {
+                    log.error("Failed to change password", e);
+                    operations.discard();
+                    throw e;
+                }
+            }
+        });
+    }
+
+    private void changeUserPw(String userId, String newUserPw) {
+        User user = getUser(userId);
+        user.changeUserPassword(passwordEncoder.encode(newUserPw));
+        userRepository.saveAndFlush(user);
     }
 
     private String makeChangePasswordUrl(String userId, String randomValue) {

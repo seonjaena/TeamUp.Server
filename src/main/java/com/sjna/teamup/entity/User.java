@@ -60,6 +60,10 @@ public class User implements UserDetails {
         this.phone = phone;
     }
 
+    public void changeUserPassword(String userPw) {
+        this.accountPw = userPw;
+    }
+
     /**
      * UserDetails 상속 받아서 생기는 코드
      * @return

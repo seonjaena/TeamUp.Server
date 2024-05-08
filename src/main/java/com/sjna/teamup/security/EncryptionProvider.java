@@ -1,5 +1,6 @@
 package com.sjna.teamup.security;
 
+import com.sjna.teamup.exception.DecryptionException;
 import com.sjna.teamup.exception.EncryptionException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -54,4 +55,21 @@ public class EncryptionProvider {
 
     }
 
+    public String decrypt(String encryptedText) throws EncryptionException {
+        Locale locale = LocaleContextHolder.getLocale();
+
+        if (StringUtils.isEmpty(encryptedText)) {
+            throw new DecryptionException(messageSource.getMessage("error.decrypt.fail", null, locale));
+        }
+
+        try {
+            byte[] encryptedTextBytes = Base64.getDecoder().decode(encryptedText);
+            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
+            return new String(cipher.doFinal(encryptedTextBytes), StandardCharsets.UTF_8);
+        } catch(Exception e) {
+            log.error(messageSource.getMessage("error.decrypt.fail", null, locale), e);
+            throw new DecryptionException(messageSource.getMessage("error.decrypt.fail", null, locale), e);
+        }
+    }
 }

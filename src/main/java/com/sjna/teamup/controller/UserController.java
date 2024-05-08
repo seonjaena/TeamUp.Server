@@ -1,5 +1,6 @@
 package com.sjna.teamup.controller;
 
+import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.service.UserService;
 import jakarta.validation.Valid;
@@ -45,6 +46,11 @@ public class UserController {
             @Pattern(regexp = "^[a-zA-Z0-9+-\\_.]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", message = "constraint.user-id.pattern")
             @PathVariable(name = "userId") String userId) {
         userService.sendChangePasswordUrl(userId);
+    }
+
+    @PatchMapping(value = "/password")
+    public void changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
+        userService.changePassword(changePasswordRequest);
     }
 
 }

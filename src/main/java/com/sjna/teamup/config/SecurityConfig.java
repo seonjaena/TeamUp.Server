@@ -37,7 +37,7 @@ public class SecurityConfig {
             Map.entry(HttpMethod.GET, new String[]{"/auth/renewal", "/user/available/**", "/common/health-check", "/user/link/password/*"}),
             Map.entry(HttpMethod.POST, new String[]{"/user", "/auth", "/auth/email-verification-code"}),
             Map.entry(HttpMethod.PUT, new String[]{}),
-            Map.entry(HttpMethod.PATCH, new String[]{"/auth/email-verification"}),
+            Map.entry(HttpMethod.PATCH, new String[]{"/auth/email-verification", "/user/password"}),
             Map.entry(HttpMethod.DELETE, new String[]{})
     );
 

@@ -88,6 +88,27 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse("Pw Pw2 Different", e.getMessage()));
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = BadUrlChangePwException.class)
+    public ResponseEntity badUrlChangePwException(BadUrlChangePwException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Bad URL Change Password", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(value = EncryptionException.class)
+    public ResponseEntity encryptionException(EncryptionException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ExceptionResponse("Encryption Error", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(value = DecryptionException.class)
+    public ResponseEntity decryptionException(DecryptionException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ExceptionResponse("Decryption Error", e.getMessage()));
+    }
+
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = SerializationException.class)
     public ResponseEntity serializationException(SerializationException e) {
@@ -98,7 +119,7 @@ public class CommonRestExceptionHandler {
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity unknownException(Exception e) {
-        log.error(e.getMessage());
+        log.error(e.getMessage(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                         messageSource.getMessage("error.common.500",
