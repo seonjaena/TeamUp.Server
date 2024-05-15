@@ -2,12 +2,15 @@ package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
+import com.sjna.teamup.dto.response.TestResponse;
 import com.sjna.teamup.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -51,6 +54,17 @@ public class UserController {
     @PatchMapping(value = "/password")
     public void changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
         userService.changePassword(changePasswordRequest);
+    }
+
+    @GetMapping(value = "/profile-image-url")
+    public String getProfileImageUrl(Principal principal) {
+        return userService.getProfileImageUrl(principal.getName());
+    }
+
+    // 테스트 용도의 임시 URL
+    @GetMapping(value = "/test")
+    public TestResponse a(Principal principal) {
+        return userService.a(principal.getName());
     }
 
 }

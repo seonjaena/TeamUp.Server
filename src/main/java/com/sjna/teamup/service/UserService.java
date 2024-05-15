@@ -1,7 +1,11 @@
 package com.sjna.teamup.service;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
+import com.sjna.teamup.dto.response.TestResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRole;
 import com.sjna.teamup.entity.enums.USER_STATUS;
@@ -11,6 +15,7 @@ import com.sjna.teamup.repository.UserRoleRepository;
 import com.sjna.teamup.security.AuthUser;
 import com.sjna.teamup.sender.EmailSender;
 import com.sjna.teamup.security.EncryptionProvider;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -29,6 +34,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +50,12 @@ public class UserService implements UserDetailsService {
     @Value("${service.email.change-password.valid-minute:60}")
     private Integer changePasswordValidMinute;
 
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucket;
+
+    @Value("${service.profile-image.default-path}")
+    private String defaultProfileImagePath;
+
     private final RedisTemplate<String, Object> redisTemplate;
     private final EmailSender emailSender;
     private final EncryptionProvider encryptionProvider;
@@ -51,6 +63,7 @@ public class UserService implements UserDetailsService {
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final MessageSource messageSource;
+    private final AmazonS3Client s3Client;
 
     @Override
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
@@ -189,6 +202,71 @@ public class UserService implements UserDetailsService {
                 }
             }
         });
+    }
+
+    public String getProfileImageUrl(String userId) {
+        User user = getUser(userId);
+        String imageFullRoute = user.getProfileImage();
+        String fileUrl;
+
+        if(imageFullRoute != null) {
+            fileUrl = getFilePreSignedUrl(bucket, imageFullRoute);
+        }else {
+            fileUrl = getFilePreSignedUrl(bucket, defaultProfileImagePath);
+        }
+
+        return fileUrl;
+    }
+
+    // 테스트 용도의 임시 메서드
+    public TestResponse a(String userId) {
+        User user = getUser(userId);
+        String nickname = user.getNickname();
+        String phone = user.getPhone();
+        LocalDate birth = user.getBirth();
+        String profileImage = user.getProfileImage();
+        String fileUrl;
+
+        if(profileImage != null) {
+            fileUrl = getFilePreSignedUrl(bucket, profileImage);
+        }else {
+            fileUrl = getFilePreSignedUrl(bucket, defaultProfileImagePath);
+        }
+
+        TestResponse testResponse = new TestResponse();
+        testResponse.setProfileImageUrl(fileUrl);
+        testResponse.setNickname(nickname);
+        testResponse.setBirth(birth);
+        testResponse.setPhone(phone);
+        return testResponse;
+    }
+
+    private String getFilePreSignedUrl(String bucketName, String s3FileFullPath) {
+
+        Locale locale = LocaleContextHolder.getLocale();
+
+        if(!isFileExistsInStorage(bucketName, s3FileFullPath)) {
+            throw new FileNotExistsException(messageSource.getMessage("error.file.not-exist", null, locale));
+        }
+
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime() + 1000 * 60 * 5;
+        expiration.setTime(expTimeMillis);
+
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucketName, s3FileFullPath)
+                        .withMethod(HttpMethod.GET)
+                        .withExpiration(expiration);
+        String preSignedURL = s3Client.generatePresignedUrl(generatePresignedUrlRequest).toString();
+        log.info("pre-signed url = {}", preSignedURL);
+        return preSignedURL;
+    }
+
+    private boolean isFileExistsInStorage(String bucketName, String s3FileFullPath) {
+        if(StringUtils.isEmpty(s3FileFullPath)) {
+            return false;
+        }
+        return s3Client.doesObjectExist(bucketName, s3FileFullPath);
     }
 
     private void changeUserPw(String userId, String newUserPw) {
