@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import java.security.Principal;
+import java.time.LocalDate;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -51,6 +53,19 @@ public class UserController {
     @PatchMapping(value = "/password")
     public void changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
         userService.changePassword(changePasswordRequest);
+    }
+
+    @PatchMapping(value = "/nickname/{userNickname}")
+    private void changeNickname(
+            @Pattern(regexp = "^(?!_)(?=.*[a-zA-Z0-9가-힣_])[a-zA-Z0-9가-힣_]{2,16}(?<!_)$", message = "constraint.user-nickname.pattern")
+            @PathVariable(name = "userNickname") String userNickname,
+            Principal principal) {
+        userService.changeNickname(principal.getName(), userNickname);
+    }
+
+    @PatchMapping(value = "/birth/{userBirth}")
+    public void changeBirth(@PathVariable(name = "userBirth") LocalDate userBirth, Principal principal) {
+        userService.changeBirth(principal.getName(), userBirth);
     }
 
 }

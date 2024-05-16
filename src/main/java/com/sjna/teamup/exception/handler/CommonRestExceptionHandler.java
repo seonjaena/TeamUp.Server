@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import java.util.List;
 
 @Slf4j
@@ -67,6 +68,13 @@ public class CommonRestExceptionHandler {
                 );
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = HandlerMethodValidationException.class)
+    public ResponseEntity handlerMethodValidationException(HandlerMethodValidationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Argument Error", e.getMessage()));
+    }
+
     @ResponseStatus(HttpStatus.CONFLICT)
     @ExceptionHandler(value = AlreadyUserEmailExistsException.class)
     public ResponseEntity alreadyUserEmailExistsException(AlreadyUserEmailExistsException e) {
@@ -74,11 +82,25 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse("Email Already Exists", e.getMessage()));
     }
 
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ExceptionHandler(value = AlreadyUserNicknameExistsException.class)
+    public ResponseEntity alreadyUserNicknameExistsException(AlreadyUserNicknameExistsException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ExceptionResponse("Nickname Already Exists", e.getMessage()));
+    }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = BadVerificationCodeException.class)
     public ResponseEntity badVerificationCodeException(BadVerificationCodeException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ExceptionResponse("Bad Email Verification Code", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = UserBirthDateNotExistsException.class)
+    public ResponseEntity userBirthDateNotExistsException(UserBirthDateNotExistsException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("User Birth Not Exists Date", e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -120,6 +142,7 @@ public class CommonRestExceptionHandler {
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity unknownException(Exception e) {
         log.error(e.getMessage(), e);
+        log.warn(e.getClass().getName());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
                         messageSource.getMessage("error.common.500",

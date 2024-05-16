@@ -30,6 +30,7 @@ service:
       valid-minute: ${EMAIL_VERIFICATION_CODE_VALID_MIN:10}
     change-password:
       valid-minute: ${CHANGE_PASSWORD_LINK_VALID_MIN:60}
+  min-age: 15
 
 ---
 spring:

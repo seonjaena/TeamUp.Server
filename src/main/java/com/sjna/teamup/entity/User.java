@@ -63,6 +63,13 @@ public class User implements UserDetails {
     public void changeUserPassword(String userPw) {
         this.accountPw = userPw;
     }
+    public void changeUserNickname(String userNickname) {
+        this.nickname = userNickname;
+    }
+    public void changeBirth(LocalDate birth) {
+        this.birth = birth;
+    }
+
 
     /**
      * UserDetails 상속 받아서 생기는 코드

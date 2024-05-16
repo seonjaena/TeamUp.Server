@@ -11,6 +11,7 @@ import com.sjna.teamup.repository.UserRoleRepository;
 import com.sjna.teamup.security.AuthUser;
 import com.sjna.teamup.sender.EmailSender;
 import com.sjna.teamup.security.EncryptionProvider;
+import com.sjna.teamup.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -29,6 +30,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -43,6 +45,9 @@ public class UserService implements UserDetailsService {
 
     @Value("${service.email.change-password.valid-minute:60}")
     private Integer changePasswordValidMinute;
+
+    @Value("${service.min-age:15}")
+    private Integer minAge;
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final EmailSender emailSender;
@@ -189,6 +194,41 @@ public class UserService implements UserDetailsService {
                 }
             }
         });
+    }
+
+    @Transactional
+    public void changeNickname(String userId, String userNickname) {
+        Locale locale = LocaleContextHolder.getLocale();
+
+        User user = getUser(userId);
+        // 이미 사용하고 있는 닉네임을 사용하는 경우 DB에 업데이트 할 필요 없음 (에러를 낼 필요도 없음)
+        if(Objects.equals(userNickname, user.getNickname())) {
+            return;
+        }
+
+        if(!checkUserNicknameAvailable(userNickname)) {
+            throw new AlreadyUserNicknameExistsException(messageSource.getMessage("error.nickname.already-exist", null, locale));
+        }
+
+        user.changeUserNickname(userNickname);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void changeBirth(String userId, LocalDate userBirth) {
+        Locale locale = LocaleContextHolder.getLocale();
+
+        if(DateUtil.isExistDate(userBirth)) {
+            throw new UserBirthDateNotExistsException(messageSource.getMessage("error.date.not-exist", null, locale));
+        }
+
+        if(!DateUtil.isOlderThanOrEqual(userBirth, minAge)) {
+            throw new UserYoungException(messageSource.getMessage("error.age.too-young", new Integer[]{minAge}, locale));
+        }
+
+        User user = getUser(userId);
+        user.changeBirth(userBirth);
+        userRepository.save(user);
     }
 
     private void changeUserPw(String userId, String newUserPw) {
