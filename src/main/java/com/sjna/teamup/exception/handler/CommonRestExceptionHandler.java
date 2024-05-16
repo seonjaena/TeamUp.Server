@@ -53,6 +53,13 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse("Failed To Send Email", e.getMessage()));
     }
 
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = FileNotExistsException.class)
+    public ResponseEntity fileNotExistsException(FileNotExistsException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("File Not Exists", e.getMessage()));
+    }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public ResponseEntity methodArgumentNotValidException(MethodArgumentNotValidException e) {

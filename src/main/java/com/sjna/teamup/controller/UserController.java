@@ -2,6 +2,7 @@ package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
+import com.sjna.teamup.dto.response.TestResponse;
 import com.sjna.teamup.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -66,6 +67,17 @@ public class UserController {
     @PatchMapping(value = "/birth/{userBirth}")
     public void changeBirth(@PathVariable(name = "userBirth") LocalDate userBirth, Principal principal) {
         userService.changeBirth(principal.getName(), userBirth);
+    }
+
+    @GetMapping(value = "/profile-image-url")
+    public String getProfileImageUrl(Principal principal) {
+        return userService.getProfileImageUrl(principal.getName());
+    }
+
+    // 테스트 용도의 임시 URL
+    @GetMapping(value = "/test")
+    public TestResponse a(Principal principal) {
+        return userService.a(principal.getName());
     }
 
 }

@@ -31,6 +31,8 @@ service:
     change-password:
       valid-minute: ${CHANGE_PASSWORD_LINK_VALID_MIN:60}
   min-age: 15
+  profile-image:
+    default-path: profile-image/default.jpeg
 
 ---
 spring:
@@ -69,6 +71,12 @@ cloud:
       secret-key: ${AWS_SECRET_KEY}
     ses:
       send-email: ${SES_SEND_EMAIL}
+    s3:
+      bucket: ${COMMON_DATA_BUCKET}
+    region:
+      static: ${AWS_REGION}
+    stack:
+      auto: false
 
 front:
   base-url: ${FRONT_BASE_URL:https://together-nine.vercel.app}
@@ -106,6 +114,12 @@ cloud:
   aws:
     ses:
       send-email: ${SES_SEND_EMAIL}
+    s3:
+      bucket: ${COMMON_DATA_BUCKET}
+    region:
+      static: ${AWS_REGION}
+    stack:
+      auto: false
 
 front:
   base-url: ${FRONT_BASE_URL:https://together-nine.vercel.app}

@@ -1,14 +1,18 @@
 package com.sjna.teamup.config;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class AwsConfig {
+
+    @Value("${cloud.aws.region.static}")
+    private String region;
 
     @Bean
     public AmazonSimpleEmailService amazonSimpleEmailService() {
@@ -22,7 +26,15 @@ public class AwsConfig {
          * 6. 인스턴스 프로파일 자격 증명 (EC2 인스턴스에 열결된 credentials 사용)
          */
         return AmazonSimpleEmailServiceClient.builder()
-                .withRegion(Regions.AP_NORTHEAST_2)
+                .withRegion(region)
+                .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+                .build();
+    }
+
+    @Bean
+    public AmazonS3Client amazonS3Client() {
+        return (AmazonS3Client) AmazonS3Client.builder()
+                .withRegion(region)
                 .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
                 .build();
     }

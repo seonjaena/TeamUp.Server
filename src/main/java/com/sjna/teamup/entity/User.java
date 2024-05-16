@@ -48,8 +48,11 @@ public class User implements UserDetails {
     @Column(name = "PHONE", length = 20)
     private String phone;
 
+    @Column(name = "PROFILE_IMAGE", length = 200)
+    private String profileImage;
+
     @Builder
-    public User(String accountId, String accountPw, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone) {
+    public User(String accountId, String accountPw, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone, String profileImage) {
         this.accountId = accountId;
         this.accountPw = accountPw;
         this.nickname = nickname;
@@ -58,6 +61,7 @@ public class User implements UserDetails {
         this.name = name;
         this.birth = birth;
         this.phone = phone;
+        this.profileImage = profileImage;
     }
 
     public void changeUserPassword(String userPw) {
