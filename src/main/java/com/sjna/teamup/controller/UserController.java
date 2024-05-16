@@ -2,6 +2,7 @@ package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
+import com.sjna.teamup.dto.response.ProfileImageUrlResponse;
 import com.sjna.teamup.dto.response.TestResponse;
 import com.sjna.teamup.service.UserService;
 import jakarta.validation.Valid;
@@ -70,7 +71,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/profile-image-url")
-    public String getProfileImageUrl(Principal principal) {
+    public ProfileImageUrlResponse getProfileImageUrl(Principal principal) {
         return userService.getProfileImageUrl(principal.getName());
     }
 

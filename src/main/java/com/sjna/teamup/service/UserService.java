@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
+import com.sjna.teamup.dto.response.ProfileImageUrlResponse;
 import com.sjna.teamup.dto.response.TestResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRole;
@@ -243,7 +244,7 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
     }
 
-    public String getProfileImageUrl(String userId) {
+    public ProfileImageUrlResponse getProfileImageUrl(String userId) {
         User user = getUser(userId);
         String imageFullRoute = user.getProfileImage();
         String fileUrl;
@@ -254,7 +255,7 @@ public class UserService implements UserDetailsService {
             fileUrl = getFilePreSignedUrl(bucket, defaultProfileImagePath);
         }
 
-        return fileUrl;
+        return new ProfileImageUrlResponse(fileUrl);
     }
 
     // 테스트 용도의 임시 메서드
