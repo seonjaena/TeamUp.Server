@@ -90,6 +90,13 @@ public class CommonRestExceptionHandler {
     }
 
     @ResponseStatus(HttpStatus.CONFLICT)
+    @ExceptionHandler(value = AlreadyUserPhoneExistsException.class)
+    public ResponseEntity alreadyUserPhoneExistsException(AlreadyUserPhoneExistsException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ExceptionResponse("Phone Already Exists", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.CONFLICT)
     @ExceptionHandler(value = AlreadyUserNicknameExistsException.class)
     public ResponseEntity alreadyUserNicknameExistsException(AlreadyUserNicknameExistsException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

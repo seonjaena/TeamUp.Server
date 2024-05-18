@@ -3,19 +3,23 @@ package com.sjna.teamup.service;
 import com.sjna.teamup.dto.JwtDto;
 import com.sjna.teamup.dto.request.LoginRequest;
 import com.sjna.teamup.dto.request.EmailVerificationCodeRequest;
+import com.sjna.teamup.dto.request.PhoneVerificationCodeRequest;
 import com.sjna.teamup.dto.response.LoginResponse;
 import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRefreshToken;
 import com.sjna.teamup.exception.*;
+import com.sjna.teamup.exception.handler.AlreadyUserPhoneExistsException;
 import com.sjna.teamup.repository.UserRefreshTokenRepository;
 import com.sjna.teamup.security.JwtProvider;
 import com.sjna.teamup.sender.EmailSender;
+import com.sjna.teamup.sender.SMSSender;
 import com.sjna.teamup.util.StringUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -40,6 +44,9 @@ public class AuthService {
     @Value("${service.email.verification.valid-minute:10}")
     private Integer emailVerificationValidMinute;
 
+    @Value("${service.phone.verification.valid-minute:10}")
+    private Integer phoneVerificationValidMinute;
+
     @PersistenceContext
     private EntityManager em;
 
@@ -49,6 +56,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final EmailSender emailSender;
+    private final SMSSender smsSender;
     private final MessageSource messageSource;
 
     @Transactional
@@ -134,6 +142,36 @@ public class AuthService {
 
     }
 
+    public void sendVerificationCode(PhoneVerificationCodeRequest verificationCodeRequest) {
+        Locale locale = LocaleContextHolder.getLocale();
+        String verificationCode = createPhoneVerificationCode(verificationCodeRequest);
+
+        // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
+        if(!userService.checkUserPhoneAvailable(verificationCodeRequest.getPhone())) {
+            throw new AlreadyUserPhoneExistsException(messageSource.getMessage("error.phone.already-exist", null, locale));
+        }
+
+        redisTemplate.execute(new SessionCallback<List<Object>>() {
+            @Override
+            public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                try {
+                    operations.multi();
+                    operations.delete("verificationCode_" + verificationCodeRequest.getPhone());
+                    operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getPhone(), verificationCode, phoneVerificationValidMinute, TimeUnit.MINUTES);
+
+                    String smsBody = messageSource.getMessage("phone.verification.body", new String[]{verificationCode}, locale);
+                    smsSender.sendOneMessage(verificationCodeRequest.getPhone(), smsBody);
+
+                    return operations.exec();
+                }catch(Exception e) {
+                    log.error("Failed to send verification code", e);
+                    operations.discard();
+                    throw e;
+                }
+            }
+        });
+    }
+
     public void verifyEmailVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
@@ -149,12 +187,32 @@ public class AuthService {
         redisTemplate.delete(key);
     }
 
-    // 이메일 혹은 휴대전화로 인증코드를 보내는 메서드
-    private String createEmailVerficationCode(EmailVerificationCodeRequest verificationCodeRequest) {
+    @Transactional
+    public void verifyPhoneVerificationCode(String userId, PhoneVerificationCodeRequest verificationCodeRequest) {
+        Locale locale = LocaleContextHolder.getLocale();
+
+        String key;
         String verificationCode;
 
-        verificationCode = UUID.randomUUID().toString().replace("-", "");
+        key = "verificationCode_" + verificationCodeRequest.getPhone();
+        verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
 
+        if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
+            throw new BadVerificationCodeException(messageSource.getMessage("error.phone-verification-code.incorrect", null, locale));
+        }
+        User user = userService.getUser(userId);
+        user.changeUserPhone(verificationCodeRequest.getPhone());
+        redisTemplate.delete(key);
+    }
+
+    // 이메일 혹은 휴대전화로 인증코드를 보내는 메서드
+    private String createEmailVerficationCode(EmailVerificationCodeRequest verificationCodeRequest) {
+        String verificationCode = UUID.randomUUID().toString().replace("-", "");
+        return verificationCode;
+    }
+
+    private String createPhoneVerificationCode(PhoneVerificationCodeRequest verificationCodeRequest) {
+        String verificationCode = RandomStringUtils.randomNumeric(8);
         return verificationCode;
     }
 

@@ -30,6 +30,9 @@ service:
       valid-minute: ${EMAIL_VERIFICATION_CODE_VALID_MIN:10}
     change-password:
       valid-minute: ${CHANGE_PASSWORD_LINK_VALID_MIN:60}
+  phone:
+    verification:
+      valid-minute: ${PHONE_VERIFICATION_CODE_VALID_MIN:10}
   min-age: 15
   profile-image:
     default-path: profile-image/default.jpeg
@@ -77,6 +80,11 @@ cloud:
       static: ${AWS_REGION}
     stack:
       auto: false
+  cool-sms:
+    credentials:
+      access-key: ${SMS_ACCESS_KEY}
+      secret-key: ${SMS_SECRET_KEY}
+    send-phone: ${SMS_SEND_PHONE}
 
 front:
   base-url: ${FRONT_BASE_URL:https://together-nine.vercel.app}
@@ -120,6 +128,11 @@ cloud:
       static: ${AWS_REGION}
     stack:
       auto: false
+  cool-sms:
+    credentials:
+      access-key: ${SMS_ACCESS_KEY}
+      secret-key: ${SMS_SECRET_KEY}
+    send-phone: ${SMS_SEND_PHONE}
 
 front:
   base-url: ${FRONT_BASE_URL:https://together-nine.vercel.app}

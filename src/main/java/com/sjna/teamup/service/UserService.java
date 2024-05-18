@@ -107,6 +107,10 @@ public class UserService implements UserDetailsService {
         return userRepository.findByAccountId(userId).isEmpty();
     }
 
+    public boolean checkUserPhoneAvailable(String phone) {
+        return userRepository.findByPhone(phone).isEmpty();
+    }
+
     public boolean checkUserNicknameAvailable(String userNickname) {
         return userRepository.findByNickname(userNickname).isEmpty();
     }

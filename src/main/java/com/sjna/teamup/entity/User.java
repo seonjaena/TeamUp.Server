@@ -73,6 +73,9 @@ public class User implements UserDetails {
     public void changeBirth(LocalDate birth) {
         this.birth = birth;
     }
+    public void changeUserPhone(String phone) {
+        this.phone = phone;
+    }
 
 
     /**

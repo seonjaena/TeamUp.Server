@@ -2,6 +2,7 @@ package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.LoginRequest;
 import com.sjna.teamup.dto.request.EmailVerificationCodeRequest;
+import com.sjna.teamup.dto.request.PhoneVerificationCodeRequest;
 import com.sjna.teamup.dto.response.LoginResponse;
 import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.service.AuthService;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
 
 @Slf4j
 @RestController
@@ -34,9 +36,19 @@ public class AuthController {
         authService.sendVerificationCode(verificationCodeRequest);
     }
 
+    @PostMapping(value = "/phone-verification-code")
+    public void sendPhoneVerificationCode(@Valid @RequestBody PhoneVerificationCodeRequest phoneVerificationCodeRequest) {
+        authService.sendVerificationCode(phoneVerificationCodeRequest);
+    }
+
     @PatchMapping(value = "/email-verification")
     public void verifyEmailCode(@Valid @RequestBody EmailVerificationCodeRequest verificationCodeRequest) {
         authService.verifyEmailVerificationCode(verificationCodeRequest);
+    }
+
+    @PatchMapping(value = "/phone-verification")
+    public void verifyPhoneCode(@Valid @RequestBody PhoneVerificationCodeRequest verificationCodeRequest, Principal principal) {
+        authService.verifyPhoneVerificationCode(principal.getName(), verificationCodeRequest);
     }
 
 }
