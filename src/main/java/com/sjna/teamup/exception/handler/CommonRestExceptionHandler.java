@@ -53,6 +53,13 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse("Failed To Send Email", e.getMessage()));
     }
 
+    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(value = SendSMSFailureException.class)
+    public ResponseEntity sendSMSFailureException(SendSMSFailureException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ExceptionResponse("Failed To Send SMS", e.getMessage()));
+    }
+
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = FileNotExistsException.class)
     public ResponseEntity fileNotExistsException(FileNotExistsException e) {
@@ -107,7 +114,14 @@ public class CommonRestExceptionHandler {
     @ExceptionHandler(value = BadVerificationCodeException.class)
     public ResponseEntity badVerificationCodeException(BadVerificationCodeException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ExceptionResponse("Bad Email Verification Code", e.getMessage()));
+                .body(new ExceptionResponse("Bad Verification Code", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = UserYoungException.class)
+    public ResponseEntity userYoungException(UserYoungException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("User Young", e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

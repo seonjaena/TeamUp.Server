@@ -1,4 +1,4 @@
-package com.sjna.teamup.exception.handler;
+package com.sjna.teamup.exception;
 
 public class AlreadyUserPhoneExistsException extends RuntimeException {
 

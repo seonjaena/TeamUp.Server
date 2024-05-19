@@ -8,8 +8,9 @@ import com.sjna.teamup.dto.response.LoginResponse;
 import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRefreshToken;
+import com.sjna.teamup.entity.enums.VERIFICATION_CODE_TYPE;
 import com.sjna.teamup.exception.*;
-import com.sjna.teamup.exception.handler.AlreadyUserPhoneExistsException;
+import com.sjna.teamup.exception.AlreadyUserPhoneExistsException;
 import com.sjna.teamup.repository.UserRefreshTokenRepository;
 import com.sjna.teamup.security.JwtProvider;
 import com.sjna.teamup.sender.EmailSender;
@@ -112,7 +113,7 @@ public class AuthService {
 
     public void sendVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
-        String verificationCode = createEmailVerficationCode(verificationCodeRequest);
+        String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.EMAIL);
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
         if(!userService.checkUserIdAvailable(verificationCodeRequest.getEmail())) {
@@ -144,7 +145,7 @@ public class AuthService {
 
     public void sendVerificationCode(PhoneVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
-        String verificationCode = createPhoneVerificationCode(verificationCodeRequest);
+        String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.PHONE);
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
         if(!userService.checkUserPhoneAvailable(verificationCodeRequest.getPhone())) {
@@ -166,7 +167,7 @@ public class AuthService {
                 }catch(Exception e) {
                     log.error("Failed to send verification code", e);
                     operations.discard();
-                    throw e;
+                    throw new SendSMSFailureException(messageSource.getMessage("error.send-sms.fail", new String[]{verificationCodeRequest.getPhone()}, locale));
                 }
             }
         });
@@ -175,11 +176,8 @@ public class AuthService {
     public void verifyEmailVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
-        String key;
-        String verificationCode;
-
-        key = "verificationCode_" + verificationCodeRequest.getEmail();
-        verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
+        String key = "verificationCode_" + verificationCodeRequest.getEmail();
+        String verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
 
         if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
             throw new BadVerificationCodeException(messageSource.getMessage("error.email-verification-code.incorrect", null, locale));
@@ -191,11 +189,8 @@ public class AuthService {
     public void verifyPhoneVerificationCode(String userId, PhoneVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
-        String key;
-        String verificationCode;
-
-        key = "verificationCode_" + verificationCodeRequest.getPhone();
-        verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
+        String key = "verificationCode_" + verificationCodeRequest.getPhone();
+        String verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
 
         if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
             throw new BadVerificationCodeException(messageSource.getMessage("error.phone-verification-code.incorrect", null, locale));
@@ -206,13 +201,18 @@ public class AuthService {
     }
 
     // 이메일 혹은 휴대전화로 인증코드를 보내는 메서드
-    private String createEmailVerficationCode(EmailVerificationCodeRequest verificationCodeRequest) {
-        String verificationCode = UUID.randomUUID().toString().replace("-", "");
-        return verificationCode;
-    }
-
-    private String createPhoneVerificationCode(PhoneVerificationCodeRequest verificationCodeRequest) {
-        String verificationCode = RandomStringUtils.randomNumeric(8);
+    private String createVerificationCode(VERIFICATION_CODE_TYPE type) {
+        String verificationCode;
+        switch (type) {
+            case EMAIL:
+                verificationCode = UUID.randomUUID().toString().replace("-", "");
+                break;
+            case PHONE:
+                verificationCode = RandomStringUtils.randomNumeric(8);
+                break;
+            default:
+                verificationCode = null;
+        }
         return verificationCode;
     }
 
