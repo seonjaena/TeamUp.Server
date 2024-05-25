@@ -72,7 +72,7 @@ public class UserController {
     }
 
     @PatchMapping(value = "/profile-image")
-    public void changeProfileImage(@RequestBody MultipartFile profileImage, Principal principal) {
+    public void changeProfileImage(@RequestParam("profileImage") MultipartFile profileImage, Principal principal) {
         userService.changeProfileImage(principal.getName(), profileImage);
     }
 

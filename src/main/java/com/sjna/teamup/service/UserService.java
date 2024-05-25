@@ -265,18 +265,21 @@ public class UserService implements UserDetailsService {
 
         String fileName = profileImage.getOriginalFilename();
         String fileExtension = FilenameUtils.getExtension(fileName);
+        String tempFileName = String.format("%s.%s", UUID.randomUUID(), fileExtension);
 
         try {
-            File file = new File(String.format("%s/%s", profileImageTempDir, fileName));
+            File file = new File(String.format("%s/%s", profileImageTempDir, tempFileName));
             file.mkdirs();
             profileImage.transferTo(file);
 
-            String permanentName = String.format("%s/%s.%s", profileImagePermanentDir, UUID.randomUUID(), fileExtension);
+            String permanentName = String.format("%s/%s", profileImagePermanentDir, tempFileName);
             s3Client.putObject(bucket, permanentName, file);
 
             User user = getUser(userId);
-            user.changeProfileImage(file.getAbsolutePath());
+            user.changeProfileImage(permanentName);
             userRepository.save(user);
+
+            file.delete();
         }catch(IOException e) {
             throw new CreateFileFailureException(messageSource.getMessage("error.create-file.fail", null, locale));
         }
@@ -359,7 +362,7 @@ public class UserService implements UserDetailsService {
     }
 
     private void validateProfileImage(Locale locale, MultipartFile profileImage) {
-        short minFileMB = 1;
+        short minFileMB = 0;
         short maxFileMB = 5;
         List<String> allowedExtensions = List.of("png", "jpg", "jpeg", "gif");
 
@@ -369,7 +372,7 @@ public class UserService implements UserDetailsService {
 
         long fileSize = profileImage.getSize();
 
-        if(fileSize < minFileMB * 1048576L || fileSize > maxFileMB * 1048576L) {
+        if(fileSize <= minFileMB * 1048576L || fileSize > maxFileMB * 1048576L) {
             throw new FileSizeException(messageSource.getMessage("error.file-size.not-proper", new Short[]{minFileMB, maxFileMB}, locale));
         }
 
