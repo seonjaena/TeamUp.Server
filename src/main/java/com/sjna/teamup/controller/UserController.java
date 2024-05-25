@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.security.Principal;
 import java.time.LocalDate;
 
@@ -68,6 +69,11 @@ public class UserController {
     @PatchMapping(value = "/birth/{userBirth}")
     public void changeBirth(@PathVariable(name = "userBirth") LocalDate userBirth, Principal principal) {
         userService.changeBirth(principal.getName(), userBirth);
+    }
+
+    @PatchMapping(value = "/profile-image")
+    public void changeProfileImage(@RequestBody MultipartFile profileImage, Principal principal) {
+        userService.changeProfileImage(principal.getName(), profileImage);
     }
 
     @GetMapping(value = "/profile-image-url")

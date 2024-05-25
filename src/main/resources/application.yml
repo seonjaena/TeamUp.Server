@@ -36,6 +36,8 @@ service:
   min-age: 15
   profile-image:
     default-path: profile-image/default.jpeg
+    temp-dir: ${PROFILE_IMAGE_TEMP_DIR}
+    permanent-dir: ${PROFILE_IMAGE_PERMANENT_DIR}
 
 ---
 spring:

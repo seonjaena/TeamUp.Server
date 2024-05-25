@@ -76,6 +76,9 @@ public class User implements UserDetails {
     public void changeUserPhone(String phone) {
         this.phone = phone;
     }
+    public void changeProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
 
 
     /**

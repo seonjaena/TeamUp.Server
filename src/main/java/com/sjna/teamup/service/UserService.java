@@ -20,6 +20,7 @@ import io.micrometer.common.util.StringUtils;
 import com.sjna.teamup.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -36,6 +37,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +64,12 @@ public class UserService implements UserDetailsService {
 
     @Value("${service.profile-image.default-path}")
     private String defaultProfileImagePath;
+
+    @Value("${service.profile-image.temp-dir}")
+    private String profileImageTempDir;
+
+    @Value("${service.profile-image.permanent-dir}")
+    private String profileImagePermanentDir;
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final EmailSender emailSender;
@@ -248,6 +258,30 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public void changeProfileImage(String userId, MultipartFile profileImage) {
+        Locale locale = LocaleContextHolder.getLocale();
+        validateProfileImage(locale, profileImage);
+
+        String fileName = profileImage.getOriginalFilename();
+        String fileExtension = FilenameUtils.getExtension(fileName);
+
+        try {
+            File file = new File(String.format("%s/%s", profileImageTempDir, fileName));
+            file.mkdirs();
+            profileImage.transferTo(file);
+
+            String permanentName = String.format("%s/%s.%s", profileImagePermanentDir, UUID.randomUUID(), fileExtension);
+            s3Client.putObject(bucket, permanentName, file);
+
+            User user = getUser(userId);
+            user.changeProfileImage(file.getAbsolutePath());
+            userRepository.save(user);
+        }catch(IOException e) {
+            throw new CreateFileFailureException(messageSource.getMessage("error.create-file.fail", null, locale));
+        }
+    }
+
     public ProfileImageUrlResponse getProfileImageUrl(String userId) {
         User user = getUser(userId);
         String imageFullRoute = user.getProfileImage();
@@ -322,6 +356,27 @@ public class UserService implements UserDetailsService {
     private String makeChangePasswordUrl(String userId, String randomValue) {
         String encryptedUserId = encryptionProvider.encrypt(userId);
         return String.format("%s/account/changePwd?random1=%s&random2=%s", frontBaseUrl, encryptedUserId, randomValue);
+    }
+
+    private void validateProfileImage(Locale locale, MultipartFile profileImage) {
+        short minFileMB = 1;
+        short maxFileMB = 5;
+        List<String> allowedExtensions = List.of("png", "jpg", "jpeg", "gif");
+
+        if(profileImage == null || profileImage.isEmpty()) {
+            throw new EmptyFileException(messageSource.getMessage("error.file.empty", null, locale));
+        }
+
+        long fileSize = profileImage.getSize();
+
+        if(fileSize < minFileMB * 1048576L || fileSize > maxFileMB * 1048576L) {
+            throw new FileSizeException(messageSource.getMessage("error.file-size.not-proper", new Short[]{minFileMB, maxFileMB}, locale));
+        }
+
+        if( !allowedExtensions.contains( FilenameUtils.getExtension(profileImage.getOriginalFilename()) ) ) {
+            throw new BadFileExtensionException(messageSource.getMessage("error.file-extension-not-proper", new String[] {allowedExtensions.toString()}, locale));
+        }
+
     }
 
 }

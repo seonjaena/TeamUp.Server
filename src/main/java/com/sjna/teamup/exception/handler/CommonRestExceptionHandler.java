@@ -89,6 +89,34 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse("Argument Error", e.getMessage()));
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = EmptyFileException.class)
+    public ResponseEntity emptyFileException(EmptyFileException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Empty File", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = FileSizeException.class)
+    public ResponseEntity fileSizeException(FileSizeException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("File Size", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = BadFileExtensionException.class)
+    public ResponseEntity badFileExtensionException(BadFileExtensionException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Bad File Extension", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = CreateFileFailureException.class)
+    public ResponseEntity createFileFailureException(CreateFileFailureException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Failed Create File", e.getMessage()));
+    }
+
     @ResponseStatus(HttpStatus.CONFLICT)
     @ExceptionHandler(value = AlreadyUserEmailExistsException.class)
     public ResponseEntity alreadyUserEmailExistsException(AlreadyUserEmailExistsException e) {
