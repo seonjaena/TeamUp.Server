@@ -63,8 +63,10 @@ public class AuthService {
     @Transactional
     public LoginResponse login(LoginRequest loginRequestDto) throws NoSuchAlgorithmException {
 
+        // 사용자 ID를 사용하여 사용자 정보 얻어옴
         User dbUser = userService.getUser(loginRequestDto.getUserId());
 
+        // 사용자가 입력한 비밀번호와 DB에 저장된 비밀번호 비교
         if(!passwordEncoder.matches(loginRequestDto.getUserPw(), dbUser.getAccountPw())) {
             log.warn("Password is incorrect. userId={}", loginRequestDto.getUserId());
             throw new UnAuthenticatedException(
@@ -92,6 +94,7 @@ public class AuthService {
 
     @Transactional
     public RefreshAccessTokenResponse refreshAccessToken(String refreshTokenIdxHash) throws NoSuchAlgorithmException {
+        // Refresh Token의 위치를 나타내는 해시 값을 통해 Refresh Token을 DB에서 찾음
         UserRefreshToken refreshToken = userRefreshTokenRepository.findByIdxHash(refreshTokenIdxHash)
                 .orElseThrow(() -> new UnAuthenticatedException(
                         messageSource.getMessage("notice.re-login.request",
@@ -99,6 +102,9 @@ public class AuthService {
                                 LocaleContextHolder.getLocale())
                 ));
 
+        // TODO: Refresh Token의 만료 시간을 확인하고 만료되었으면 에러를 발생시키는 로직 추가
+
+        // Refresh Token을 통해서 사용자 ID와 Role을 얻어옴
         String userId = jwtProvider.getUserId(refreshToken.getValue());
         List<String> userRoles = jwtProvider.getUserRoles(refreshToken.getValue());
 
@@ -113,6 +119,8 @@ public class AuthService {
 
     public void sendVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
+
+        // 이메일 인증 코드 생성
         String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.EMAIL);
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
@@ -125,11 +133,17 @@ public class AuthService {
             public List<Object> execute(RedisOperations operations) throws DataAccessException {
                 try {
                     operations.multi();
+                    /**
+                     * 인증코드 Redis에 저장 (이미 존재한다면 제거하고 저장)
+                     * Redis에 저장되는 인증 코드 양식. key=verificationCode_{사용자 이메일}, value={인증코드}, 유효기간=10분(수정 가능)
+                     */
                     operations.delete("verificationCode_" + verificationCodeRequest.getEmail());
                     operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getEmail(), verificationCode, emailVerificationValidMinute, TimeUnit.MINUTES);
 
+                    // TODO: 이메일의 내용에 해당 인증 코드의 만료시간을 공지해야 함
                     String emailSubject = messageSource.getMessage("email.verification.subject", null, locale);
                     String emailBody = messageSource.getMessage("email.verification.body", new String[]{verificationCode, String.valueOf(emailVerificationValidMinute)}, locale);
+                    // 사용자에게 이메일 전송
                     emailSender.sendRawEmail(List.of(verificationCodeRequest.getEmail()), emailSubject, emailBody);
 
                     return operations.exec();
@@ -145,22 +159,32 @@ public class AuthService {
 
     public void sendVerificationCode(PhoneVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
-        String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.PHONE);
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
         if(!userService.checkUserPhoneAvailable(verificationCodeRequest.getPhone())) {
             throw new AlreadyUserPhoneExistsException(messageSource.getMessage("error.phone.already-exist", null, locale));
         }
 
+        // 인증 코드 생성
+        String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.PHONE);
+
         redisTemplate.execute(new SessionCallback<List<Object>>() {
             @Override
             public List<Object> execute(RedisOperations operations) throws DataAccessException {
                 try {
                     operations.multi();
+
+                    /**
+                     * 인증코드 Redis에 저장 (이미 존재한다면 제거하고 저장)
+                     * Redis에 저장되는 인증 코드 양식. key=verificationCode_{사용자 전화번호}, value={인증코드}, 유효기간=10분(수정 가능)
+                     */
                     operations.delete("verificationCode_" + verificationCodeRequest.getPhone());
                     operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getPhone(), verificationCode, phoneVerificationValidMinute, TimeUnit.MINUTES);
 
+                    // TODO: SMS의 내용에 해당 인증 코드의 만료시간을 공지해야 함
                     String smsBody = messageSource.getMessage("phone.verification.body", new String[]{verificationCode}, locale);
+
+                    // SMS 전송
                     smsSender.sendOneMessage(verificationCodeRequest.getPhone(), smsBody);
 
                     return operations.exec();
@@ -176,12 +200,16 @@ public class AuthService {
     public void verifyEmailVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
+        // Redis에 저장되는 인증 코드 양식. key=verificationCode_{사용자 이메일}
         String key = "verificationCode_" + verificationCodeRequest.getEmail();
         String verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
 
+        // 사용자가 보낸 인증코드와 Redis에 저장된 인증 코드가 동일한지 확인
         if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
             throw new BadVerificationCodeException(messageSource.getMessage("error.email-verification-code.incorrect", null, locale));
         }
+
+        // Redis 데이터 제거
         redisTemplate.delete(key);
     }
 
@@ -189,14 +217,20 @@ public class AuthService {
     public void verifyPhoneVerificationCode(String userId, PhoneVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
+        // Redis에 저장되는 인증 코드 양식. key=verificationCode_{사용자 전화번호}
         String key = "verificationCode_" + verificationCodeRequest.getPhone();
         String verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
 
-        if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
+        // 사용자가 보낸 인증코드와 Redis에 저장된 인증 코드가 동일한지 확인
+        if(!Objects.equals(verificationCode, verificationCodeRequest.getVerificationCode())) {
             throw new BadVerificationCodeException(messageSource.getMessage("error.phone-verification-code.incorrect", null, locale));
         }
+
+        // 사용자 휴대전화 번호 변경
         User user = userService.getUser(userId);
         user.changeUserPhone(verificationCodeRequest.getPhone());
+
+        // Redis에 저장된 인증 코드 제거
         redisTemplate.delete(key);
     }
 

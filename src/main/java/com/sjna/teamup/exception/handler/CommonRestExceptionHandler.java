@@ -39,9 +39,7 @@ public class CommonRestExceptionHandler {
     @ResponseStatus(value = HttpStatus.FORBIDDEN)
     @ExceptionHandler(value = UnAuthorizedException.class)
     public ResponseEntity unAuthorizedException(UnAuthorizedException e) {
-        /**
-         * TODO: 403의 에러 메시지는 Forbidden. 하지만 403은 인가에 대한 내용을 담고 싶기 때문에 임의로 타입 변경. 이게 옳은지 확인. 또한 FORBIDDEN 의미 조사 필요.
-         */
+        // TODO: 403의 에러 메시지는 Forbidden. 하지만 403은 인가에 대한 내용을 담고 싶기 때문에 임의로 타입 변경. 이게 옳은지 확인. 또한 FORBIDDEN 의미 조사 필요.
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ExceptionResponse("Unauthorized", e.getMessage()));
     }
@@ -111,10 +109,10 @@ public class CommonRestExceptionHandler {
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(value = CreateFileFailureException.class)
-    public ResponseEntity createFileFailureException(CreateFileFailureException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ExceptionResponse("Failed Create File", e.getMessage()));
+    @ExceptionHandler(value = ChangeProfileImageFailureException.class)
+    public ResponseEntity changeProfileImageFailureException(ChangeProfileImageFailureException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ExceptionResponse("Failed To Change Profile Image", e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.CONFLICT)
@@ -169,7 +167,7 @@ public class CommonRestExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = BadUrlChangePwException.class)
     public ResponseEntity badUrlChangePwException(BadUrlChangePwException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ExceptionResponse("Bad URL Change Password", e.getMessage()));
     }
 

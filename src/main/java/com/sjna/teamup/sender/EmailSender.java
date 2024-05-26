@@ -42,12 +42,7 @@ public class EmailSender {
                     .sendEmail(sendEmailRequest);
 
             if (sendEmailResult.getSdkHttpMetadata().getHttpStatusCode() != HttpStatus.OK.value()) {
-                throw new SendEmailFailureException(
-                        messageSource.getMessage("error.send-email.fail",
-                                new String[] {to.toString()},
-                                LocaleContextHolder.getLocale()
-                        )
-                );
+                throw new AmazonSimpleEmailServiceException("Failed to send email. HttpStatus=" + sendEmailResult.getSdkHttpMetadata().getHttpStatusCode());
             }
         }catch(AmazonSimpleEmailServiceException e) {
             log.error(e.getMessage());

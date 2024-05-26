@@ -2,7 +2,6 @@ package com.sjna.teamup.util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Random;
 
 public class StringUtil {
 
@@ -15,11 +14,6 @@ public class StringUtil {
             sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
         }
         return sb.toString();
-    }
-
-    public static String getVerification6DigitCode() {
-        Random rnd = new Random(System.currentTimeMillis());
-        return String.valueOf( ((1 + rnd.nextInt(2)) * 10000 + rnd.nextInt(10000)) );
     }
 
 }

@@ -22,7 +22,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping
-    public LoginResponse login(@RequestBody LoginRequest loginRequestDto) throws NoSuchAlgorithmException {
+    public LoginResponse login(@Valid @RequestBody LoginRequest loginRequestDto) throws NoSuchAlgorithmException {
         return authService.login(loginRequestDto);
     }
 

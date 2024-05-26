@@ -54,7 +54,7 @@ public class UserController {
     }
 
     @PatchMapping(value = "/password")
-    public void changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
+    public void changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
         userService.changePassword(changePasswordRequest);
     }
 
