@@ -5,10 +5,13 @@ import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.dto.response.ProfileImageUrlResponse;
 import com.sjna.teamup.dto.response.TestResponse;
 import com.sjna.teamup.service.UserService;
+import com.sjna.teamup.validator.constraint.UserIdConstraint;
+import com.sjna.teamup.validator.constraint.UserNicknameConstraint;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.security.Principal;
@@ -16,6 +19,7 @@ import java.time.LocalDate;
 
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 @RestController
 @RequestMapping(value = "/user")
 public class UserController {
@@ -47,9 +51,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/link/password/{userId}")
-    public void sendChangePasswordUrl(
-            @Pattern(regexp = "^[a-zA-Z0-9+-\\_.]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$", message = "constraint.user-id.pattern")
-            @PathVariable(name = "userId") String userId) {
+    public void sendChangePasswordUrl(@PathVariable(name = "userId") @UserIdConstraint String userId) {
         userService.sendChangePasswordUrl(userId);
     }
 
@@ -59,10 +61,8 @@ public class UserController {
     }
 
     @PatchMapping(value = "/nickname/{userNickname}")
-    private void changeNickname(
-            @Pattern(regexp = "^(?!_)(?=.*[a-zA-Z0-9가-힣_])[a-zA-Z0-9가-힣_]{2,16}(?<!_)$", message = "constraint.user-nickname.pattern")
-            @PathVariable(name = "userNickname") String userNickname,
-            Principal principal) {
+    public void changeNickname(@PathVariable(name = "userNickname") @UserNicknameConstraint String userNickname,
+                                Principal principal) {
         userService.changeNickname(principal.getName(), userNickname);
     }
 

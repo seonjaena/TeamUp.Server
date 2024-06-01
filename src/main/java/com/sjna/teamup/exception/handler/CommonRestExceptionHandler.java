@@ -2,6 +2,8 @@ package com.sjna.teamup.exception.handler;
 
 import com.sjna.teamup.dto.response.ExceptionResponse;
 import com.sjna.teamup.exception.*;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -78,6 +81,24 @@ public class CommonRestExceptionHandler {
                                 LocaleContextHolder.getLocale())
                         )
                 );
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = ConstraintViolationException.class)
+    public ResponseEntity constraintArgumentException(ConstraintViolationException e) {
+        String errorMessage = e.getConstraintViolations()
+                .stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Bad Request", errorMessage));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = UserIdNotFoundException.class)
+    public ResponseEntity userIdNotFoundException(UserIdNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("User Not Found", e.getMessage()));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
