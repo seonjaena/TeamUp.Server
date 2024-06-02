@@ -3,7 +3,7 @@ package com.sjna.teamup.controller;
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.dto.response.ProfileImageUrlResponse;
-import com.sjna.teamup.dto.response.TestResponse;
+import com.sjna.teamup.dto.response.UserProfileInfoResponse;
 import com.sjna.teamup.service.UserService;
 import com.sjna.teamup.validator.constraint.UserIdConstraint;
 import com.sjna.teamup.validator.constraint.UserNicknameConstraint;
@@ -81,10 +81,9 @@ public class UserController {
         return userService.getProfileImageUrl(principal.getName());
     }
 
-    // 테스트 용도의 임시 URL
-    @GetMapping(value = "/test")
-    public TestResponse a(Principal principal) {
-        return userService.a(principal.getName());
+    @GetMapping(value = "/profile-info")
+    public UserProfileInfoResponse getProfileInfo(Principal principal) {
+        return userService.getProfileInfo(principal.getName());
     }
 
 }

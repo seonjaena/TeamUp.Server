@@ -6,7 +6,7 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.dto.response.ProfileImageUrlResponse;
-import com.sjna.teamup.dto.response.TestResponse;
+import com.sjna.teamup.dto.response.UserProfileInfoResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRole;
 import com.sjna.teamup.entity.enums.USER_STATUS;
@@ -268,7 +268,7 @@ public class UserService implements UserDetailsService {
         Locale locale = LocaleContextHolder.getLocale();
 
         // 실제로 존재하는 날짜인지 검사
-        if(DateUtil.isExistDate(userBirth)) {
+        if(!DateUtil.isExistDate(userBirth)) {
             throw new UserBirthDateNotExistsException(messageSource.getMessage("error.date.not-exist", null, locale));
         }
 
@@ -333,27 +333,21 @@ public class UserService implements UserDetailsService {
         return new ProfileImageUrlResponse(fileUrl);
     }
 
-    // 테스트 용도의 임시 메서드
-    public TestResponse a(String userId) {
+    public UserProfileInfoResponse getProfileInfo(String userId) {
         User user = getUser(userId);
-        String nickname = user.getNickname();
-        String phone = user.getPhone();
-        LocalDate birth = user.getBirth();
+        UserProfileInfoResponse userProfileDto = new UserProfileInfoResponse(user);
+
         String profileImage = user.getProfileImage();
         String fileUrl;
 
-        if(profileImage != null) {
+        if(user != null) {
             fileUrl = getFilePreSignedUrl(bucket, profileImage);
         }else {
             fileUrl = getFilePreSignedUrl(bucket, defaultProfileImagePath);
         }
 
-        TestResponse testResponse = new TestResponse();
-        testResponse.setProfileImageUrl(fileUrl);
-        testResponse.setNickname(nickname);
-        testResponse.setBirth(birth);
-        testResponse.setPhone(phone);
-        return testResponse;
+        userProfileDto.setImageUrl(fileUrl);
+        return userProfileDto;
     }
 
     private String getFilePreSignedUrl(String bucketName, String s3FileFullPath) {
@@ -376,7 +370,7 @@ public class UserService implements UserDetailsService {
                         .withMethod(HttpMethod.GET)
                         .withExpiration(expiration);
         String preSignedURL = s3Client.generatePresignedUrl(generatePresignedUrlRequest).toString();
-        log.info("pre-signed url = {}", preSignedURL);
+        log.debug("pre-signed url = {}", preSignedURL);
         return preSignedURL;
     }
 
