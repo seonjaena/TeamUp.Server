@@ -7,6 +7,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 
@@ -51,8 +53,11 @@ public class User implements UserDetails {
     @Column(name = "PROFILE_IMAGE", length = 200)
     private String profileImage;
 
+    @Column(name = "LAST_ACCOUNT_PW_MODIFIED")
+    private LocalDateTime lastAccountPwModified;
+
     @Builder
-    public User(String accountId, String accountPw, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone, String profileImage) {
+    public User(String accountId, String accountPw, String nickname, UserRole role, USER_STATUS status, String name, LocalDate birth, String phone, String profileImage, String serviceZoneId) {
         this.accountId = accountId;
         this.accountPw = accountPw;
         this.nickname = nickname;
@@ -62,10 +67,12 @@ public class User implements UserDetails {
         this.birth = birth;
         this.phone = phone;
         this.profileImage = profileImage;
+        this.lastAccountPwModified = LocalDateTime.now(ZoneId.of(serviceZoneId));
     }
 
-    public void changeUserPassword(String userPw) {
+    public void changeUserPassword(String serviceZoneId, String userPw) {
         this.accountPw = userPw;
+        this.lastAccountPwModified = LocalDateTime.now(ZoneId.of(serviceZoneId));
     }
     public void changeUserNickname(String userNickname) {
         this.nickname = userNickname;

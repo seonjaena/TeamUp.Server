@@ -38,6 +38,7 @@ service:
     default-path: profile-image/default.jpeg
     temp-dir: ${PROFILE_IMAGE_TEMP_DIR}
     permanent-dir: ${PROFILE_IMAGE_PERMANENT_DIR}
+  zone-id: ${SERVICE_ZONE_ID:Asia/Seoul}
 
 ---
 spring:

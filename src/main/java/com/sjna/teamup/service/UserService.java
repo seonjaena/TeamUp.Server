@@ -71,6 +71,9 @@ public class UserService implements UserDetailsService {
     @Value("${service.profile-image.permanent-dir}")
     private String profileImagePermanentDir;
 
+    @Value("${service.zone-id:Asia/Seoul}")
+    private String serviceZoneId;
+
     private final RedisTemplate<String, Object> redisTemplate;
     private final EmailSender emailSender;
     private final EncryptionProvider encryptionProvider;
@@ -162,6 +165,7 @@ public class UserService implements UserDetailsService {
                 .role(basicRole)
                 .status(USER_STATUS.NORMAL)
                 .name(signUpRequest.getName())
+                .serviceZoneId(serviceZoneId)
                 .build();
 
         // 사용자 정보 저장 (회원가입 성공)
@@ -340,7 +344,7 @@ public class UserService implements UserDetailsService {
         String profileImage = user.getProfileImage();
         String fileUrl;
 
-        if(user != null) {
+        if(profileImage != null) {
             fileUrl = getFilePreSignedUrl(bucket, profileImage);
         }else {
             fileUrl = getFilePreSignedUrl(bucket, defaultProfileImagePath);
@@ -383,7 +387,7 @@ public class UserService implements UserDetailsService {
 
     private void changeUserPw(String userId, String newUserPw) {
         User user = getUser(userId);
-        user.changeUserPassword(passwordEncoder.encode(newUserPw));
+        user.changeUserPassword(serviceZoneId, passwordEncoder.encode(newUserPw));
         userRepository.saveAndFlush(user);
     }
 

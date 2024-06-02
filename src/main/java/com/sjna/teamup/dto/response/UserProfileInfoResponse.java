@@ -3,8 +3,8 @@ package com.sjna.teamup.dto.response;
 import com.sjna.teamup.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -16,6 +16,7 @@ public class UserProfileInfoResponse {
     private LocalDate userBirth;
     private String userNickname;
     private String userPhone;
+    private LocalDateTime lastPwdModifiedDateTime;
 
     public UserProfileInfoResponse(User user) {
         this.userId = user.getAccountId();
@@ -23,6 +24,7 @@ public class UserProfileInfoResponse {
         this.userBirth = user.getBirth();
         this.userNickname = user.getNickname();
         this.userPhone = user.getPhone();
+        this.lastPwdModifiedDateTime = user.getLastAccountPwModified();
     }
 
 }
