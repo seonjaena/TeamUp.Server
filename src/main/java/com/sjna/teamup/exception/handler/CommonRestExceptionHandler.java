@@ -192,6 +192,24 @@ public class CommonRestExceptionHandler {
                 .body(new ExceptionResponse("Bad URL Change Password", e.getMessage()));
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = AlreadyUsingPassword.class)
+    public ResponseEntity alreadyUsingPassword(AlreadyUsingPassword e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Already Using Password", e.getMessage()));
+    }
+
+    @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(value = UserPasswordIncorrect.class)
+    public ResponseEntity userPasswordIncorrect(UserPasswordIncorrect e) {
+        /**
+         * TODO: 401 에러 코드는 인증에 대한 에러지만 code는 UNAUTHORIZED. 이 이유를 확인해보고 만약 내가 틀리게 사용하고 있다면 해결해야 함.
+         * TODO: 401 에러 타입은 Unauthorized. 하지만 401은 인증에 대한 내용을 담고 싶기 때문에 임의로 타입 변경. 이게 옳은지 확인.
+         */
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ExceptionResponse("Unauthenticated", e.getMessage()));
+    }
+
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = EncryptionException.class)
     public ResponseEntity encryptionException(EncryptionException e) {

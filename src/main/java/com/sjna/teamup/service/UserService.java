@@ -4,6 +4,7 @@ import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
+import com.sjna.teamup.dto.request.LoginChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.dto.response.ProfileImageUrlResponse;
 import com.sjna.teamup.dto.response.UserProfileInfoResponse;
@@ -207,7 +208,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void changePassword(ChangePasswordRequest changePasswordRequest) {
+    public void findPassword(ChangePasswordRequest changePasswordRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
         // 사용자가 보낸 랜덤값1을 복호화 (사용자 ID)
@@ -227,15 +228,23 @@ public class UserService implements UserDetailsService {
                         throw new BadUrlChangePwException(messageSource.getMessage("error.change-pw.bad-url", null, locale));
                     }
 
+                    User user = getUser(userId);
+
                     // 사용자가 보낸 변경할 비밀번호와 변경할 비밀번호 확인이 동일한지 확인
                     if(!Objects.equals(changePasswordRequest.getUserPw(), changePasswordRequest.getUserPw2())) {
                         throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
                     }
 
+                    // 기존에 사용하던 비밀번호와 동일한 비밀번호로 변경하려고 하면 에러 발생
+                    if(passwordEncoder.matches(changePasswordRequest.getUserPw(), user.getPassword())) {
+                        throw new AlreadyUsingPassword(messageSource.getMessage("error.pw.already-using", null, locale));
+                    }
+
                     // Redis에서 인증 값 제거 (인증 완료)
                     operations.delete("changePwdRandomValue_" + userId);
                     // 사용자 비밀번호 수정
-                    changeUserPw(userId, changePasswordRequest.getUserPw());
+                    user.changeUserPassword(serviceZoneId, passwordEncoder.encode(changePasswordRequest.getUserPw()));
+                    userRepository.saveAndFlush(user);
 
                     return operations.exec();
                 }catch(Exception e) {
@@ -245,6 +254,32 @@ public class UserService implements UserDetailsService {
                 }
             }
         });
+    }
+
+    @Transactional
+    public void changePassword(String userId, LoginChangePasswordRequest changePasswordRequest) {
+        Locale locale = LocaleContextHolder.getLocale();
+
+        User user = getUser(userId);
+
+        String oldPw = changePasswordRequest.getOldPw();
+        String userPw = changePasswordRequest.getUserPw();
+        String userPw2 = changePasswordRequest.getUserPw2();
+
+        if(StringUtils.isBlank(oldPw) || !passwordEncoder.matches(oldPw, user.getAccountPw())) {
+            throw new UserPasswordIncorrect(messageSource.getMessage("error.user-pw.incorrect", null, locale));
+        }
+
+        if(!userPw.equals(userPw2)) {
+            throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
+        }
+
+        if(oldPw.equals(userPw)) {
+            throw new AlreadyUsingPassword(messageSource.getMessage("error.pw.already-using", null, locale));
+        }
+
+        user.changeUserPassword(serviceZoneId, passwordEncoder.encode(userPw));
+        userRepository.save(user);
     }
 
     @Transactional
@@ -383,12 +418,6 @@ public class UserService implements UserDetailsService {
             return false;
         }
         return s3Client.doesObjectExist(bucketName, s3FileFullPath);
-    }
-
-    private void changeUserPw(String userId, String newUserPw) {
-        User user = getUser(userId);
-        user.changeUserPassword(serviceZoneId, passwordEncoder.encode(newUserPw));
-        userRepository.saveAndFlush(user);
     }
 
     private String makeChangePasswordUrl(String userId, String randomValue) {

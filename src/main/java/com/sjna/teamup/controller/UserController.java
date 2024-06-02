@@ -1,6 +1,7 @@
 package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.ChangePasswordRequest;
+import com.sjna.teamup.dto.request.LoginChangePasswordRequest;
 import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.dto.response.ProfileImageUrlResponse;
 import com.sjna.teamup.dto.response.UserProfileInfoResponse;
@@ -56,8 +57,14 @@ public class UserController {
     }
 
     @PatchMapping(value = "/password")
-    public void changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
-        userService.changePassword(changePasswordRequest);
+    public void findPassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
+        userService.findPassword(changePasswordRequest);
+    }
+
+    @PatchMapping(value = "/authenticated/password")
+    public void changePassword(@Valid @RequestBody LoginChangePasswordRequest changePasswordRequest,
+                               Principal principal) {
+        userService.changePassword(principal.getName(), changePasswordRequest);
     }
 
     @PatchMapping(value = "/nickname/{userNickname}")
