@@ -10,7 +10,7 @@ import java.lang.annotation.*;
 @Target({ ElementType.PARAMETER, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface UserNicknameConstraint {
-    String message() default "Invalid nickname";
+    String message() default "";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

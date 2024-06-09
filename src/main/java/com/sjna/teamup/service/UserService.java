@@ -267,7 +267,7 @@ public class UserService implements UserDetailsService {
         String userPw2 = changePasswordRequest.getUserPw2();
 
         if(StringUtils.isBlank(oldPw) || !passwordEncoder.matches(oldPw, user.getAccountPw())) {
-            throw new UserPasswordIncorrect(messageSource.getMessage("error.user-pw.incorrect", null, locale));
+            throw new OriginPasswordIncorrect(messageSource.getMessage("error.user-pw.incorrect", null, locale));
         }
 
         if(!userPw.equals(userPw2)) {
