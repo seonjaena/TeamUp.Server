@@ -37,8 +37,8 @@ pipeline {
                     //이미 생성된 이미지 찾기 위함
                     builtTag = "teamup.server:${VER}"
 
-                    ecrRepositoryDev = "107896592142.dkr.ecr.ap-northeast-2.amazonaws.com"
-                    ecrRepositoryProd = "107896592142.dkr.ecr.ap-northeast-2.amazonaws.com"
+                    ecrRepositoryDev = "339713136341.dkr.ecr.ap-northeast-2.amazonaws.com"
+                    ecrRepositoryProd = "339713136341.dkr.ecr.ap-northeast-2.amazonaws.com"
                     ecrRepository = (env.BRANCH_NAME == "master") ? ecrRepositoryProd : ecrRepositoryDev
 
                     // 로그인
