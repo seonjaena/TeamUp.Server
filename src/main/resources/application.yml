@@ -11,6 +11,19 @@ spring:
   logging:
     config: classpath:logback-spring.xml
 
+  mail:
+    host: smtp.mailgun.org
+    port: 587
+    from: ${SEND_EMAIL}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 jwt:
   secret: ${JWT_SECRET_KEY}
   expire:
@@ -76,7 +89,7 @@ cloud:
       access-key: ${AWS_ACCESS_KEY}
       secret-key: ${AWS_SECRET_KEY}
     ses:
-      send-email: ${SES_SEND_EMAIL}
+      send-email: ${SEND_EMAIL}
     s3:
       bucket: ${COMMON_DATA_BUCKET}
     region:
@@ -124,7 +137,7 @@ spring:
 cloud:
   aws:
     ses:
-      send-email: ${SES_SEND_EMAIL}
+      send-email: ${SEND_EMAIL}
     s3:
       bucket: ${COMMON_DATA_BUCKET}
     region:
