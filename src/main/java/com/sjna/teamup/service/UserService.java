@@ -9,9 +9,11 @@ import com.sjna.teamup.dto.request.SignUpRequest;
 import com.sjna.teamup.dto.response.ProfileImageUrlResponse;
 import com.sjna.teamup.dto.response.UserProfileInfoResponse;
 import com.sjna.teamup.entity.User;
+import com.sjna.teamup.entity.UserRefreshToken;
 import com.sjna.teamup.entity.UserRole;
 import com.sjna.teamup.entity.enums.USER_STATUS;
 import com.sjna.teamup.exception.*;
+import com.sjna.teamup.repository.UserRefreshTokenRepository;
 import com.sjna.teamup.repository.UserRepository;
 import com.sjna.teamup.repository.UserRoleRepository;
 import com.sjna.teamup.security.AuthUser;
@@ -80,6 +82,7 @@ public class UserService implements UserDetailsService {
     private final EncryptionProvider encryptionProvider;
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
+    private final UserRefreshTokenRepository userRefreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final MessageSource messageSource;
     private final AmazonS3Client s3Client;
@@ -387,6 +390,16 @@ public class UserService implements UserDetailsService {
 
         userProfileDto.setImageUrl(fileUrl);
         return userProfileDto;
+    }
+
+    @Transactional
+    public void delete(String userId) {
+        User user = getUser(userId);
+        Optional<UserRefreshToken> refreshToken = userRefreshTokenRepository.findByUser(user);
+        if(refreshToken.isPresent()) {
+            userRefreshTokenRepository.delete(refreshToken.get());
+        }
+        userRepository.delete(user);
     }
 
     private String getFilePreSignedUrl(String bucketName, String s3FileFullPath) {

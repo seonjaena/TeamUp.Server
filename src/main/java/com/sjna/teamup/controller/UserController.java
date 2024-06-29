@@ -93,4 +93,9 @@ public class UserController {
         return userService.getProfileInfo(principal.getName());
     }
 
+    @DeleteMapping
+    public void delete(Principal principal) {
+        userService.delete(principal.getName());
+    }
+
 }
