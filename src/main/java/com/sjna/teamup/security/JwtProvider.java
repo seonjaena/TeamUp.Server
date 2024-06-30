@@ -86,20 +86,14 @@ public class JwtProvider {
         // token에 userId 정보가 있는지 확인
         if(!StringUtils.hasText(userId)) {
             throw new UnAuthenticatedException(
-                    messageSource.getMessage("notice.re-login.request",
-                            new String[] {},
-                            LocaleContextHolder.getLocale()
-                    )
+                    messageSource.getMessage("notice.re-login.request", null, LocaleContextHolder.getLocale())
             );
         }
 
         // token에 사용자 권한에 대한 정보가 있는지 확인
         if(claims.get(ROLES) == null) {
             throw new UnAuthorizedException(
-                    messageSource.getMessage("notice.re-login.request",
-                            new String[] {},
-                            LocaleContextHolder.getLocale()
-                    )
+                    messageSource.getMessage("notice.re-login.request", null, LocaleContextHolder.getLocale())
             );
         }
 
@@ -174,10 +168,7 @@ public class JwtProvider {
     public Claims parseClaims(String token) {
         if(!StringUtils.hasText(token)) {
             throw new UnAuthenticatedException(
-                    messageSource.getMessage("notice.re-login.request",
-                            new String[] {},
-                            LocaleContextHolder.getLocale()
-                    )
+                    messageSource.getMessage("notice.re-login.request", null, LocaleContextHolder.getLocale())
             );
         }
         return Jwts.parser()

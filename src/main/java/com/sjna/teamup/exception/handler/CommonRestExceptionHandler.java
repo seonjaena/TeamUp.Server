@@ -69,6 +69,13 @@ public class CommonRestExceptionHandler {
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = DeletedUserException.class)
+    public ResponseEntity deletedUserException(DeletedUserException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Deleted User", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public ResponseEntity methodArgumentNotValidException(MethodArgumentNotValidException e) {
         List<ObjectError> errors = e.getBindingResult().getAllErrors();
@@ -229,9 +236,7 @@ public class CommonRestExceptionHandler {
         log.warn(e.getClass().getName());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                        messageSource.getMessage("error.common.500",
-                                new String[] {},
-                                LocaleContextHolder.getLocale())
+                        messageSource.getMessage("error.common.500", null, LocaleContextHolder.getLocale())
                 ));
     }
 

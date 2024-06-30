@@ -39,10 +39,8 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         response.getWriter()
                 .write(objectMapper.writeValueAsString(
                         new ExceptionResponse("Unauthorized",
-                                messageSource.getMessage("error.common.403",
-                                        new String[]{},
-                                        LocaleContextHolder.getLocale()))
+                                messageSource.getMessage("error.common.403", null, LocaleContextHolder.getLocale())
                         )
-                );
+                ));
     }
 }

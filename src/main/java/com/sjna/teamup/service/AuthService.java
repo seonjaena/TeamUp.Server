@@ -8,6 +8,7 @@ import com.sjna.teamup.dto.response.LoginResponse;
 import com.sjna.teamup.dto.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRefreshToken;
+import com.sjna.teamup.entity.enums.USER_STATUS;
 import com.sjna.teamup.entity.enums.VERIFICATION_CODE_TYPE;
 import com.sjna.teamup.exception.*;
 import com.sjna.teamup.exception.AlreadyUserPhoneExistsException;
@@ -70,10 +71,12 @@ public class AuthService {
         if(!passwordEncoder.matches(loginRequestDto.getUserPw(), dbUser.getAccountPw())) {
             log.warn("Password is incorrect. userId={}", loginRequestDto.getUserId());
             throw new UnAuthenticatedException(
-                    messageSource.getMessage("error.user-id-pw.incorrect",
-                            new String[] {},
-                            LocaleContextHolder.getLocale())
+                    messageSource.getMessage("error.user-id-pw.incorrect", null, LocaleContextHolder.getLocale())
             );
+        }
+
+        if(dbUser.getStatus() == USER_STATUS.DELETED) {
+            throw new DeletedUserException(messageSource.getMessage("notice.deleted-user", null, LocaleContextHolder.getLocale()));
         }
 
         // JWT Token 생성(Refresh, Access)
@@ -97,9 +100,7 @@ public class AuthService {
         // Refresh Token의 위치를 나타내는 해시 값을 통해 Refresh Token을 DB에서 찾음
         UserRefreshToken refreshToken = userRefreshTokenRepository.findByIdxHash(refreshTokenIdxHash)
                 .orElseThrow(() -> new UnAuthenticatedException(
-                        messageSource.getMessage("notice.re-login.request",
-                                new String[] {},
-                                LocaleContextHolder.getLocale())
+                        messageSource.getMessage("notice.re-login.request", null, LocaleContextHolder.getLocale())
                 ));
 
         // TODO: Refresh Token의 만료 시간을 확인하고 만료되었으면 에러를 발생시키는 로직 추가
@@ -227,7 +228,7 @@ public class AuthService {
         }
 
         // 사용자 휴대전화 번호 변경
-        User user = userService.getUser(userId);
+        User user = userService.getNotDeletedUser(userId);
         user.changeUserPhone(verificationCodeRequest.getPhone());
 
         // Redis에 저장된 인증 코드 제거

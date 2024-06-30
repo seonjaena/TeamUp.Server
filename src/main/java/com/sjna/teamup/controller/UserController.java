@@ -98,4 +98,9 @@ public class UserController {
         userService.delete(principal.getName());
     }
 
+    @DeleteMapping(value = "/temp")
+    public void deleteTmp(Principal principal) {
+        userService.deleteTmp(principal.getName());
+    }
+
 }

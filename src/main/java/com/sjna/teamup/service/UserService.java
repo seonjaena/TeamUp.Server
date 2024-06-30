@@ -11,6 +11,7 @@ import com.sjna.teamup.dto.response.UserProfileInfoResponse;
 import com.sjna.teamup.entity.User;
 import com.sjna.teamup.entity.UserRefreshToken;
 import com.sjna.teamup.entity.UserRole;
+import com.sjna.teamup.entity.enums.FILTER_INCLUSION_MODE;
 import com.sjna.teamup.entity.enums.USER_STATUS;
 import com.sjna.teamup.exception.*;
 import com.sjna.teamup.repository.UserRefreshTokenRepository;
@@ -60,7 +61,7 @@ public class UserService implements UserDetailsService {
     private Integer changePasswordValidMinute;
 
     @Value("${service.min-age:15}")
-    private Integer minAge;
+    private Short minAge;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -91,12 +92,10 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
         User user;
         try {
-            user = getUser(userId);
+            user = getNotDeletedUser(userId);
         }catch(UserIdNotFoundException e) {
             throw new UsernameNotFoundException(
-                    messageSource.getMessage("error.user-id-pw.incorrect",
-                            new String[] {},
-                            LocaleContextHolder.getLocale())
+                    messageSource.getMessage("error.user-id-pw.incorrect", null, LocaleContextHolder.getLocale())
             );
         }
 
@@ -109,11 +108,28 @@ public class UserService implements UserDetailsService {
     public User getUser(String userId) {
         return getOptionalUser(userId)
                 .orElseThrow(() -> new UserIdNotFoundException(
-                        messageSource.getMessage("error.user-id.incorrect",
-                                new String[] {},
-                                LocaleContextHolder.getLocale())
-                        )
-                );
+                        messageSource.getMessage("error.user-id.incorrect", null, LocaleContextHolder.getLocale())
+                ));
+    }
+
+    public User getUser(String userId, USER_STATUS[] userStatuses, FILTER_INCLUSION_MODE filterInclusionMode) {
+        User user = getUser(userId);
+        for(USER_STATUS status : userStatuses) {
+            if(user.getStatus() == status) {
+                if(filterInclusionMode == FILTER_INCLUSION_MODE.INCLUDE) {
+                    return user;
+                }else {
+                    break;
+                }
+            }
+        }
+        throw new UserIdNotFoundException(
+                messageSource.getMessage("error.user-id.incorrect", null, LocaleContextHolder.getLocale())
+        );
+    }
+
+    public User getNotDeletedUser(String userId) {
+        return getUser(userId, new USER_STATUS[]{ USER_STATUS.DELETED }, FILTER_INCLUSION_MODE.EXCLUDE);
     }
 
     public Optional<User> getOptionalUser(String userId) {
@@ -156,10 +172,7 @@ public class UserService implements UserDetailsService {
         // 사용자의 권한을 가장 낮은 권한으로 세팅 (TODO: 권한에 대한 내용을 나중에 어떻게 활용할 것인지 상세하게 설정해야 함)
         UserRole basicRole = userRoleRepository.findAll(Sort.by(Sort.Direction.ASC, "priority")).stream().findFirst()
                 .orElseThrow(() -> new UserRoleNotExistException(
-                        messageSource.getMessage("error.common.500",
-                                new String[] {},
-                                LocaleContextHolder.getLocale()
-                        )
+                        messageSource.getMessage("error.common.500", null, LocaleContextHolder.getLocale())
                 ));
 
         User user = User.builder()
@@ -178,7 +191,7 @@ public class UserService implements UserDetailsService {
 
     public void sendChangePasswordUrl(String userId) {
         Locale locale = LocaleContextHolder.getLocale();
-        User user = getUser(userId);
+        User user = getNotDeletedUser(userId);
         String randomValue = UUID.randomUUID().toString();
         // 비밀번호 수정을 위한 URL 생성
         String url = makeChangePasswordUrl(user.getAccountId(), randomValue);
@@ -231,7 +244,7 @@ public class UserService implements UserDetailsService {
                         throw new BadUrlChangePwException(messageSource.getMessage("error.change-pw.bad-url", null, locale));
                     }
 
-                    User user = getUser(userId);
+                    User user = getNotDeletedUser(userId);
 
                     // 사용자가 보낸 변경할 비밀번호와 변경할 비밀번호 확인이 동일한지 확인
                     if(!Objects.equals(changePasswordRequest.getUserPw(), changePasswordRequest.getUserPw2())) {
@@ -263,7 +276,7 @@ public class UserService implements UserDetailsService {
     public void changePassword(String userId, LoginChangePasswordRequest changePasswordRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
-        User user = getUser(userId);
+        User user = getNotDeletedUser(userId);
 
         String oldPw = changePasswordRequest.getOldPw();
         String userPw = changePasswordRequest.getUserPw();
@@ -289,7 +302,7 @@ public class UserService implements UserDetailsService {
     public void changeNickname(String userId, String userNickname) {
         Locale locale = LocaleContextHolder.getLocale();
 
-        User user = getUser(userId);
+        User user = getNotDeletedUser(userId);
         // 본인이 이미 사용하고 있는 닉네임을 사용하는 경우 DB에 업데이트 할 필요 없음 (에러를 낼 필요도 없음)
         if(Objects.equals(userNickname, user.getNickname())) {
             return;
@@ -316,11 +329,11 @@ public class UserService implements UserDetailsService {
 
         // 나이가 너무 적은지 확인
         if(!DateUtil.isOlderThanOrEqual(userBirth, minAge)) {
-            throw new UserYoungException(messageSource.getMessage("error.age.too-young", new Integer[]{minAge}, locale));
+            throw new UserYoungException(messageSource.getMessage("error.age.too-young", new Short[]{minAge}, locale));
         }
 
         // 사용자 생년월일 수정
-        User user = getUser(userId);
+        User user = getNotDeletedUser(userId);
         user.changeBirth(userBirth);
         userRepository.save(user);
     }
@@ -344,7 +357,7 @@ public class UserService implements UserDetailsService {
             String permanentName = String.format("%s/%s", profileImagePermanentDir, tempFileName);
 
             // 사용자 프로필 이미지 주소를 변경
-            User user = getUser(userId);
+            User user = getNotDeletedUser(userId);
             user.changeProfileImage(permanentName);
             userRepository.save(user);
 
@@ -360,7 +373,7 @@ public class UserService implements UserDetailsService {
 
     public ProfileImageUrlResponse getProfileImageUrl(String userId) {
         // 사용자의 프로필 이미지가 저장된 경로 알아옴
-        User user = getUser(userId);
+        User user = getNotDeletedUser(userId);
         String imageFullRoute = user.getProfileImage();
 
         String fileUrl;
@@ -376,7 +389,7 @@ public class UserService implements UserDetailsService {
     }
 
     public UserProfileInfoResponse getProfileInfo(String userId) {
-        User user = getUser(userId);
+        User user = getNotDeletedUser(userId);
         UserProfileInfoResponse userProfileDto = new UserProfileInfoResponse(user);
 
         String profileImage = user.getProfileImage();
@@ -394,7 +407,17 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void delete(String userId) {
-        User user = getUser(userId);
+        User user = getNotDeletedUser(userId);
+        Optional<UserRefreshToken> refreshToken = userRefreshTokenRepository.findByUser(user);
+        if(refreshToken.isPresent()) {
+            userRefreshTokenRepository.delete(refreshToken.get());
+        }
+        user.delete();
+    }
+
+    @Transactional
+    public void deleteTmp(String userId) {
+        User user = getNotDeletedUser(userId);
         Optional<UserRefreshToken> refreshToken = userRefreshTokenRepository.findByUser(user);
         if(refreshToken.isPresent()) {
             userRefreshTokenRepository.delete(refreshToken.get());

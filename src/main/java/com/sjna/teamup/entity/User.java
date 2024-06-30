@@ -86,7 +86,9 @@ public class User implements UserDetails {
     public void changeProfileImage(String profileImage) {
         this.profileImage = profileImage;
     }
-
+    public void delete() {
+        this.status = USER_STATUS.DELETED;
+    }
 
     /**
      * UserDetails 상속 받아서 생기는 코드
