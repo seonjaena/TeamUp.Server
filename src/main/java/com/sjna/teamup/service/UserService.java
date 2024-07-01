@@ -114,13 +114,16 @@ public class UserService implements UserDetailsService {
 
     public User getUser(String userId, USER_STATUS[] userStatuses, FILTER_INCLUSION_MODE filterInclusionMode) {
         User user = getUser(userId);
-        for(USER_STATUS status : userStatuses) {
-            if(user.getStatus() == status) {
-                if(filterInclusionMode == FILTER_INCLUSION_MODE.INCLUDE) {
-                    return user;
-                }else {
-                    break;
-                }
+        boolean statusMatched = Arrays.stream(userStatuses)
+                .anyMatch(status -> user.getStatus() == status);
+
+        if(filterInclusionMode == FILTER_INCLUSION_MODE.INCLUDE) {
+            if(statusMatched) {
+                return user;
+            }
+        }else {
+            if(!statusMatched) {
+                return user;
             }
         }
         throw new UserIdNotFoundException(
@@ -132,7 +135,7 @@ public class UserService implements UserDetailsService {
         return getUser(userId, new USER_STATUS[]{ USER_STATUS.DELETED }, FILTER_INCLUSION_MODE.EXCLUDE);
     }
 
-    public Optional<User> getOptionalUser(String userId) {
+    private Optional<User> getOptionalUser(String userId) {
         return userRepository.findByAccountId(userId);
     }
 
