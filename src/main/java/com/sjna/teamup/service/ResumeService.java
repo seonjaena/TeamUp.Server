@@ -27,19 +27,23 @@ public class ResumeService {
     @Transactional
     public void addResume(AddResumeRequest resumeRequest, String userId) {
         User user = userService.getNotDeletedUser(userId);
+        
+        String projectUrls = resumeRequest.getProjectUrls() == null ? "" : String.join(";", resumeRequest.getProjectUrls());
+        String certificates = resumeRequest.getCertificates() == null ? "" : String.join(";", resumeRequest.getCertificates());
+
         Resume resume = Resume.builder()
                 .introduction(resumeRequest.getIntroduction())
-                .projectUrl(resumeRequest.getProjectUrl())
+                .projectUrl(projectUrls)
                 .skill(resumeRequest.getSkill())
                 .experience(resumeRequest.getExperience())
                 .additionalInfo(resumeRequest.getAdditionalInfo())
-                .certificate(resumeRequest.getCertificate())
+                .certificate(certificates)
                 .user(user)
                 .build();
         Resume savedResume = resumeRepository.saveAndFlush(resume);
         List<ResumeLanguage> resumeLanguages = new ArrayList<>();
-        for(Map.Entry<String, Short> language : resumeRequest.getLanguages().entrySet()) {
-            resumeLanguages.add(ResumeLanguage.of(savedResume, language.getKey(), language.getValue()));
+        for(Map.Entry<String, String> language : resumeRequest.getLanguages().entrySet()) {
+            resumeLanguages.add(ResumeLanguage.of(savedResume, language.getKey(), Short.valueOf(language.getValue())));
         }
         List<ResumeLanguage> savedResumeLanguages = resumeLanguageRepository.saveAllAndFlush(resumeLanguages);
 
