@@ -32,7 +32,7 @@ public class AddResumeRequest {
     @ListElementSizeConstraint(max = 100, message = "error.certificate.max-size", params = {"100"})
     private List<String> certificates = new ArrayList<>();
 
-    @MapSizeConstraint(max = 10, message = "error.language-grade.pattern", params = {"10"})
+    @MapSizeConstraint(max = 10, message = "error.language-grade.max-size", params = {"10"})
     @MapElementPatternConstraint(regexp = "^[1-5]$", message = "error.language-grade.pattern", params = {"1", "5"})
     private Map<String, String> languages = new HashMap<>();
 

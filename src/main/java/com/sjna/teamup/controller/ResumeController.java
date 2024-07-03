@@ -1,13 +1,11 @@
 package com.sjna.teamup.controller;
 
 import com.sjna.teamup.dto.request.AddResumeRequest;
+import com.sjna.teamup.dto.response.ResumeResponse;
 import com.sjna.teamup.service.ResumeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 
 @RestController
@@ -21,6 +19,11 @@ public class ResumeController {
     public void addResume(@Valid @RequestBody AddResumeRequest resumeRequest,
                           Principal principal) {
         resumeService.addResume(resumeRequest, principal.getName());
+    }
+
+    @GetMapping
+    public ResumeResponse getResume(Principal principal) {
+        return resumeService.getResume(principal.getName());
     }
 
 }

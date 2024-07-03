@@ -111,6 +111,13 @@ public class CommonRestExceptionHandler {
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = ResumeNotFoundException.class)
+    public ResponseEntity resumeNotFoundException(ResumeNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ExceptionResponse("Resume Not Found", e.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = EmptyFileException.class)
     public ResponseEntity emptyFileException(EmptyFileException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
