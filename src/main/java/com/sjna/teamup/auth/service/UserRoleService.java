@@ -1,7 +1,7 @@
 package com.sjna.teamup.auth.service;
 
 import com.sjna.teamup.auth.infrastructure.UserRoleEntity;
-import com.sjna.teamup.auth.infrastructure.UserRoleRepository;
+import com.sjna.teamup.auth.service.port.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;

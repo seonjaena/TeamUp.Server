@@ -1,9 +1,11 @@
 package com.sjna.teamup.resume.domain;
 
 import com.sjna.teamup.user.domain.User;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.Builder;
+import lombok.Getter;
 
+@Getter
+@Builder
 public class Resume {
 
     private Long id;
@@ -14,10 +16,5 @@ public class Resume {
     private String additionalInfo;
     private String certificate;
     private User user;
-    private List<ResumeLanguage> languages = new ArrayList<>();
-
-    public void addLanguage(ResumeLanguage resumeLanguage) {
-        this.languages.add(resumeLanguage);
-    }
 
 }

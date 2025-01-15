@@ -3,23 +3,24 @@ package com.sjna.teamup.user.service;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.sjna.teamup.auth.service.port.UserRefreshTokenRepository;
+import com.sjna.teamup.auth.service.port.UserRoleRepository;
 import com.sjna.teamup.common.domain.exception.*;
 import com.sjna.teamup.user.controller.request.ChangePasswordRequest;
 import com.sjna.teamup.user.controller.request.LoginChangePasswordRequest;
 import com.sjna.teamup.user.controller.request.SignUpRequest;
 import com.sjna.teamup.user.controller.response.ProfileImageUrlResponse;
 import com.sjna.teamup.user.controller.response.UserProfileInfoResponse;
+import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.user.infrastructure.UserEntity;
 import com.sjna.teamup.auth.infrastructure.UserRefreshTokenEntity;
 import com.sjna.teamup.auth.infrastructure.UserRoleEntity;
 import com.sjna.teamup.common.domain.FILTER_INCLUSION_MODE;
 import com.sjna.teamup.user.domain.USER_STATUS;
-import com.sjna.teamup.auth.infrastructure.UserRefreshTokenRepository;
-import com.sjna.teamup.user.infrastructure.UserRepository;
-import com.sjna.teamup.auth.infrastructure.UserRoleRepository;
 import com.sjna.teamup.common.security.AuthUser;
 import com.sjna.teamup.common.infrastructure.sender.EmailSender;
 import com.sjna.teamup.common.security.EncryptionProvider;
+import com.sjna.teamup.user.service.port.UserRepository;
 import io.micrometer.common.util.StringUtils;
 import com.sjna.teamup.common.util.DateUtil;
 import lombok.RequiredArgsConstructor;
@@ -105,11 +106,8 @@ public class UserService implements UserDetailsService {
         return new AuthUser(userEntity.getAccountId(), userEntity.getAccountPw(), roles, userEntity);
     }
 
-    public UserEntity getUser(String userId) {
-        return getOptionalUser(userId)
-                .orElseThrow(() -> new UserIdNotFoundException(
-                        messageSource.getMessage("error.user-id.incorrect", null, LocaleContextHolder.getLocale())
-                ));
+    public User getUser(String userId) {
+        return userRepository.getUserByAccountId(userId);
     }
 
     public UserEntity getUser(String userId, USER_STATUS[] userStatuses, FILTER_INCLUSION_MODE filterInclusionMode) {
@@ -135,20 +133,16 @@ public class UserService implements UserDetailsService {
         return getUser(userId, new USER_STATUS[]{ USER_STATUS.DELETED }, FILTER_INCLUSION_MODE.EXCLUDE);
     }
 
-    private Optional<UserEntity> getOptionalUser(String userId) {
-        return userRepository.findByAccountId(userId);
-    }
-
     public boolean checkUserIdAvailable(String userId) {
-        return userRepository.findByAccountId(userId).isEmpty();
+        return !userRepository.isExistsAccountId(userId);
     }
 
     public boolean checkUserPhoneAvailable(String phone) {
-        return userRepository.findByPhone(phone).isEmpty();
+        return !userRepository.isExistsPhone(phone);
     }
 
     public boolean checkUserNicknameAvailable(String userNickname) {
-        return userRepository.findByNickname(userNickname).isEmpty();
+        return !userRepository.isExistsNickname(userNickname);
     }
 
     @Transactional
@@ -163,7 +157,7 @@ public class UserService implements UserDetailsService {
         String tempNickname = signUpRequest.getEmail().substring(0, signUpRequest.getEmail().indexOf("@")) + "_" + RandomStringUtils.randomAlphanumeric(5);
 
         // 동일한 이메일이 이미 존재하는지 확인
-        if(userRepository.findByAccountId(signUpRequest.getEmail()).isPresent()) {
+        if(!checkUserIdAvailable(signUpRequest.getEmail())) {
             throw new AlreadyUserEmailExistsException(messageSource.getMessage("error.email.already-exist", null, locale));
         }
 

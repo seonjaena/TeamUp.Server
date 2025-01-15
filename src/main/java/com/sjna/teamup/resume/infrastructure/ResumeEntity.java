@@ -1,10 +1,9 @@
 package com.sjna.teamup.resume.infrastructure;
 
+import com.sjna.teamup.resume.domain.Resume;
 import com.sjna.teamup.user.infrastructure.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Builder
@@ -41,7 +40,30 @@ public class ResumeEntity {
     @JoinColumn(name = "USER_IDX", foreignKey = @ForeignKey(value = ConstraintMode.CONSTRAINT))     // RDBMS에서 외래키를 설정하기 위해서 사용 (NO_CONSTRAINT: 논리적으로만 연관관계 매핑)
     private UserEntity user;
 
-    @OneToMany(mappedBy = "resume")
-    private List<ResumeLanguageEntity> languages = new ArrayList<>();
+    public static ResumeEntity fromDomain(Resume resume) {
+        ResumeEntity resumeEntity = new ResumeEntity();
+        resumeEntity.id = resume.getId();
+        resumeEntity.introduction = resume.getIntroduction();
+        resumeEntity.projectUrl = resume.getProjectUrl();
+        resumeEntity.skill = resume.getSkill();
+        resumeEntity.experience = resume.getExperience();
+        resumeEntity.additionalInfo = resume.getAdditionalInfo();
+        resumeEntity.certificate = resume.getCertificate();
+        resumeEntity.user = UserEntity.fromDomain(resume.getUser());
+        return resumeEntity;
+    }
+
+    public Resume toDomain() {
+        return Resume.builder()
+                .id(this.id)
+                .introduction(this.introduction)
+                .projectUrl(this.projectUrl)
+                .skill(this.skill)
+                .experience(this.experience)
+                .additionalInfo(this.additionalInfo)
+                .certificate(this.certificate)
+                .user(this.user.toDomain())
+                .build();
+    }
 
 }

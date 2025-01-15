@@ -1,5 +1,6 @@
 package com.sjna.teamup.auth.service;
 
+import com.sjna.teamup.auth.service.port.UserRefreshTokenRepository;
 import com.sjna.teamup.common.domain.exception.*;
 import com.sjna.teamup.common.domain.Jwt;
 import com.sjna.teamup.auth.controller.request.LoginRequest;
@@ -11,14 +12,11 @@ import com.sjna.teamup.user.infrastructure.UserEntity;
 import com.sjna.teamup.auth.infrastructure.UserRefreshTokenEntity;
 import com.sjna.teamup.user.domain.USER_STATUS;
 import com.sjna.teamup.auth.domain.VERIFICATION_CODE_TYPE;
-import com.sjna.teamup.auth.infrastructure.UserRefreshTokenRepository;
 import com.sjna.teamup.common.security.JwtProvider;
 import com.sjna.teamup.common.infrastructure.sender.EmailSender;
 import com.sjna.teamup.common.infrastructure.sender.SMSSender;
 import com.sjna.teamup.user.service.UserService;
 import com.sjna.teamup.common.util.StringUtil;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -48,9 +46,6 @@ public class AuthService {
 
     @Value("${service.phone.verification.valid-minute:10}")
     private Integer phoneVerificationValidMinute;
-
-    @PersistenceContext
-    private EntityManager em;
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
@@ -87,8 +82,7 @@ public class AuthService {
         // 이미 refresh token이 있다면 삭제하고 저장, 없다면 그냥 저장
         Optional<UserRefreshTokenEntity> savedRefreshToken = userRefreshTokenRepository.findByUser(dbUserEntity);
         if(savedRefreshToken.isPresent()) {
-            userRefreshTokenRepository.delete(savedRefreshToken.get());
-            em.flush();
+            userRefreshTokenRepository.deleteAndFlush(savedRefreshToken.get());
         }
         userRefreshTokenRepository.save(UserRefreshTokenEntity.from(refreshTokenIdxHash, dbUserEntity, jwt.getRefreshToken()));
 
@@ -98,10 +92,7 @@ public class AuthService {
     @Transactional
     public RefreshAccessTokenResponse refreshAccessToken(String refreshTokenIdxHash) throws NoSuchAlgorithmException {
         // Refresh Token의 위치를 나타내는 해시 값을 통해 Refresh Token을 DB에서 찾음
-        UserRefreshTokenEntity refreshToken = userRefreshTokenRepository.findByIdxHash(refreshTokenIdxHash)
-                .orElseThrow(() -> new UnAuthenticatedException(
-                        messageSource.getMessage("notice.re-login.request", null, LocaleContextHolder.getLocale())
-                ));
+        UserRefreshTokenEntity refreshToken = userRefreshTokenRepository.getByIdxHash(refreshTokenIdxHash);
 
         // TODO: Refresh Token의 만료 시간을 확인하고 만료되었으면 에러를 발생시키는 로직 추가
 
