@@ -13,7 +13,7 @@ import com.sjna.teamup.user.infrastructure.UserEntity;
 import com.sjna.teamup.auth.infrastructure.UserRefreshTokenEntity;
 import com.sjna.teamup.auth.infrastructure.UserRoleEntity;
 import com.sjna.teamup.common.domain.FILTER_INCLUSION_MODE;
-import com.sjna.teamup.user.infrastructure.USER_STATUS;
+import com.sjna.teamup.user.domain.USER_STATUS;
 import com.sjna.teamup.auth.infrastructure.UserRefreshTokenRepository;
 import com.sjna.teamup.user.infrastructure.UserRepository;
 import com.sjna.teamup.auth.infrastructure.UserRoleRepository;

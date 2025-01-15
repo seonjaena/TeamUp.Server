@@ -1,12 +1,12 @@
 package com.sjna.teamup.auth.infrastructure;
 
+import com.sjna.teamup.auth.domain.UserRefreshToken;
 import com.sjna.teamup.user.infrastructure.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Setter(AccessLevel.PRIVATE)
 @AllArgsConstructor
 @Entity
 @Table(name = "USER_REFRESH_TOKEN")
@@ -27,16 +27,22 @@ public class UserRefreshTokenEntity {
     @Column(name = "TOKEN_VALUE", length = 300)
     private String value;
 
-    public static UserRefreshTokenEntity from(String idxHash, UserEntity user, String value) {
-        UserRefreshTokenEntity token = new UserRefreshTokenEntity();
-        token.setIdxHash(idxHash);
-        token.setUser(user);
-        token.setValue(value);
-        return token;
+    public static UserRefreshTokenEntity fromDomain(UserRefreshToken refreshToken) {
+        UserRefreshTokenEntity refreshTokenEntity = new UserRefreshTokenEntity();
+        refreshTokenEntity.idx = refreshToken.getIdx();
+        refreshTokenEntity.idxHash = refreshToken.getIdxHash();
+        refreshTokenEntity.user = UserEntity.fromDomain(refreshToken.getUser());
+        refreshTokenEntity.value = refreshToken.getValue();
+        return refreshTokenEntity;
     }
 
-    public void changeIdxHash(String idxHash) {
-        this.idxHash = idxHash;
+    public UserRefreshToken toDomain() {
+        return UserRefreshToken.builder()
+                .idx(this.idx)
+                .idxHash(this.idxHash)
+                .user(user.toDomain())
+                .value(this.value)
+                .build();
     }
 
 }

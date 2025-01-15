@@ -1,6 +1,8 @@
 package com.sjna.teamup.user.infrastructure;
 
 import com.sjna.teamup.auth.infrastructure.UserRoleEntity;
+import com.sjna.teamup.user.domain.USER_STATUS;
+import com.sjna.teamup.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,7 +20,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class UserEntity implements UserDetails {
+public class UserEntity{
 
     @Id
     @Column(name = "IDX")
@@ -57,62 +59,36 @@ public class UserEntity implements UserDetails {
     @Column(name = "LAST_ACCOUNT_PW_MODIFIED")
     private LocalDateTime lastAccountPwModified;
 
-    public void changeUserPassword(String serviceZoneId, String userPw) {
-        this.accountPw = userPw;
-        this.lastAccountPwModified = LocalDateTime.now(ZoneId.of(serviceZoneId));
-    }
-    public void changeUserNickname(String userNickname) {
-        this.nickname = userNickname;
-    }
-    public void changeBirth(LocalDate birth) {
-        this.birth = birth;
-    }
-    public void changeUserPhone(String phone) {
-        this.phone = phone;
-    }
-    public void changeProfileImage(String profileImage) {
-        this.profileImage = profileImage;
-    }
-    public void delete() {
-        this.status = USER_STATUS.DELETED;
+    public static UserEntity fromDomain(User user) {
+        UserEntity userEntity = new UserEntity();
+        userEntity.idx = user.getIdx();
+        userEntity.accountId = user.getAccountId();
+        userEntity.accountPw = user.getAccountPw();
+        userEntity.nickname = user.getNickname();
+        userEntity.role = UserRoleEntity.fromDomain(user.getRole());
+        userEntity.status = user.getStatus();
+        userEntity.name = user.getName();
+        userEntity.birth = user.getBirth();
+        userEntity.phone = user.getPhone();
+        userEntity.profileImage = user.getProfileImage();
+        userEntity.lastAccountPwModified = user.getLastAccountPwModified();
+        return userEntity;
     }
 
-    /**
-     * UserDetails 상속 받아서 생기는 코드
-     * @return
-     */
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(this.role.getName()));
+    public User toDomain() {
+        return User.builder()
+                .idx(this.idx)
+                .accountId(this.accountId)
+                .accountPw(this.accountPw)
+                .nickname(this.nickname)
+                .role(this.role.toDomain())
+                .status(this.status)
+                .name(this.name)
+                .birth(this.birth)
+                .phone(this.phone)
+                .profileImage(this.profileImage)
+                .lastAccountPwModified(this.lastAccountPwModified)
+                .build();
     }
 
-    @Override
-    public String getPassword() {
-        return null;
-    }
-
-    @Override
-    public String getUsername() {
-        return null;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
 }

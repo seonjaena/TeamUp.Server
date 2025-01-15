@@ -9,7 +9,7 @@ import com.sjna.teamup.auth.controller.response.LoginResponse;
 import com.sjna.teamup.auth.controller.response.RefreshAccessTokenResponse;
 import com.sjna.teamup.user.infrastructure.UserEntity;
 import com.sjna.teamup.auth.infrastructure.UserRefreshTokenEntity;
-import com.sjna.teamup.user.infrastructure.USER_STATUS;
+import com.sjna.teamup.user.domain.USER_STATUS;
 import com.sjna.teamup.auth.domain.VERIFICATION_CODE_TYPE;
 import com.sjna.teamup.auth.infrastructure.UserRefreshTokenRepository;
 import com.sjna.teamup.common.security.JwtProvider;

@@ -5,7 +5,6 @@ import lombok.*;
 
 @Entity
 @Table(name = "RESUME_LANGUAGE")
-@Setter(AccessLevel.PRIVATE)
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -25,13 +24,5 @@ public class ResumeLanguageEntity {
 
     @Column(name = "GRADE")
     private Short grade;
-
-    public static ResumeLanguageEntity of(ResumeEntity resume, String type, Short grade) {
-        ResumeLanguageEntity resumeLanguageEntity = new ResumeLanguageEntity();
-        resumeLanguageEntity.setResume(resume);
-        resumeLanguageEntity.setType(type);
-        resumeLanguageEntity.setGrade(grade);
-        return resumeLanguageEntity;
-    }
 
 }

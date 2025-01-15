@@ -6,12 +6,12 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "RESUME")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Entity
+@Table(name = "RESUME")
 public class ResumeEntity {
 
     @Id
@@ -43,9 +43,5 @@ public class ResumeEntity {
 
     @OneToMany(mappedBy = "resume")
     private List<ResumeLanguageEntity> languages = new ArrayList<>();
-
-    public void addLanguage(ResumeLanguageEntity resumeLanguageEntity) {
-        this.languages.add(resumeLanguageEntity);
-    }
 
 }

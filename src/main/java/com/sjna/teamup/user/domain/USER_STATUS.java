@@ -1,4 +1,4 @@
-package com.sjna.teamup.user.infrastructure;
+package com.sjna.teamup.user.domain;
 
 import com.sjna.teamup.common.domain.EnumConverter;
 import com.sjna.teamup.common.domain.EnumFlag;
