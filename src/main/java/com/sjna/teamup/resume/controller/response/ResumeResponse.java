@@ -1,5 +1,7 @@
 package com.sjna.teamup.resume.controller.response;
 
+import com.sjna.teamup.resume.domain.Resume;
+import com.sjna.teamup.resume.domain.ResumeLanguage;
 import com.sjna.teamup.resume.infrastructure.ResumeEntity;
 import com.sjna.teamup.resume.infrastructure.ResumeLanguageEntity;
 import lombok.Data;
@@ -18,14 +20,14 @@ public class ResumeResponse {
     private List<String> certificates = new ArrayList<>();
     private Map<String, Short> languages = new HashMap<>();
 
-    public ResumeResponse(ResumeEntity resume, List<ResumeLanguageEntity> resumeLanguageEntities) {
+    public ResumeResponse(Resume resume, List<ResumeLanguage> resumeLanguages) {
         this.introduction = resume.getIntroduction();
         this.projectUrls = resume.getProjectUrl() == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(resume.getProjectUrl().split(";")));
         this.skill = resume.getSkill();
         this.experience = resume.getExperience();
         this.additionalInfo = resume.getAdditionalInfo();
         this.certificates = resume.getCertificate() == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(resume.getCertificate().split(";")));
-        for(ResumeLanguageEntity language : resumeLanguageEntities) {
+        for(ResumeLanguage language : resumeLanguages) {
             this.languages.put(language.getType(), language.getGrade());
         }
     }

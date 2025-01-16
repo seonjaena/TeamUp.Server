@@ -7,9 +7,6 @@ import java.util.Optional;
 
 public interface UserRepository {
 
-    Optional<User> findByAccountIdAndStatus(String userId, USER_STATUS userStatus);
-    Optional<User> findActiveUserByAccountId(String userId);
-    Optional<User> findByAccountId(String userId);
     User getUserByAccountId(String userId);
     User save(User user);
     User saveAndFlush(User user);

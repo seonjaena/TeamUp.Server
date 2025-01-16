@@ -1,5 +1,6 @@
 package com.sjna.teamup.auth.service;
 
+import com.sjna.teamup.auth.domain.UserRefreshToken;
 import com.sjna.teamup.auth.service.port.UserRefreshTokenRepository;
 import com.sjna.teamup.common.domain.exception.*;
 import com.sjna.teamup.common.domain.Jwt;
@@ -8,8 +9,7 @@ import com.sjna.teamup.auth.controller.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.request.PhoneVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.response.LoginResponse;
 import com.sjna.teamup.auth.controller.response.RefreshAccessTokenResponse;
-import com.sjna.teamup.user.infrastructure.UserEntity;
-import com.sjna.teamup.auth.infrastructure.UserRefreshTokenEntity;
+import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.user.domain.USER_STATUS;
 import com.sjna.teamup.auth.domain.VERIFICATION_CODE_TYPE;
 import com.sjna.teamup.common.security.JwtProvider;
@@ -28,12 +28,14 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -57,34 +59,34 @@ public class AuthService {
     private final MessageSource messageSource;
 
     @Transactional
-    public LoginResponse login(LoginRequest loginRequestDto) throws NoSuchAlgorithmException {
+    public LoginResponse login(LoginRequest loginRequest) throws NoSuchAlgorithmException {
 
         // 사용자 ID를 사용하여 사용자 정보 얻어옴
-        UserEntity dbUserEntity = userService.getUser(loginRequestDto.getUserId());
+        User dbUser = userService.getUser(loginRequest.getUserId());
 
         // 사용자가 입력한 비밀번호와 DB에 저장된 비밀번호 비교
-        if(!passwordEncoder.matches(loginRequestDto.getUserPw(), dbUserEntity.getAccountPw())) {
-            log.warn("Password is incorrect. userId={}", loginRequestDto.getUserId());
+        if(!passwordEncoder.matches(loginRequest.getUserPw(), dbUser.getAccountPw())) {
+            log.warn("Password is incorrect. userId={}", loginRequest.getUserId());
             throw new UnAuthenticatedException(
                     messageSource.getMessage("error.user-id-pw.incorrect", null, LocaleContextHolder.getLocale())
             );
         }
 
-        if(dbUserEntity.getStatus() == USER_STATUS.DELETED) {
+        if(dbUser.getStatus() == USER_STATUS.DELETED) {
             throw new DeletedUserException(messageSource.getMessage("notice.deleted-user", null, LocaleContextHolder.getLocale()));
         }
 
         // JWT Token 생성(Refresh, Access)
-        Jwt jwt = jwtProvider.createToken(dbUserEntity.getAccountId(), List.of(dbUserEntity.getRole().getName()));
+        Jwt jwt = jwtProvider.createToken(dbUser.getAccountId(), dbUser.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
         // refresh token의 인덱스를 생성한다. (클라이언트에 전달)
-        String refreshTokenIdxHash = StringUtil.getMd5(System.currentTimeMillis() + dbUserEntity.getAccountId());
+        String refreshTokenIdxHash = StringUtil.getMd5(System.currentTimeMillis() + dbUser.getAccountId());
 
         // 이미 refresh token이 있다면 삭제하고 저장, 없다면 그냥 저장
-        Optional<UserRefreshTokenEntity> savedRefreshToken = userRefreshTokenRepository.findByUser(dbUserEntity);
+        Optional<UserRefreshToken> savedRefreshToken = userRefreshTokenRepository.findByUser(dbUser);
         if(savedRefreshToken.isPresent()) {
             userRefreshTokenRepository.deleteAndFlush(savedRefreshToken.get());
         }
-        userRefreshTokenRepository.save(UserRefreshTokenEntity.from(refreshTokenIdxHash, dbUserEntity, jwt.getRefreshToken()));
+        userRefreshTokenRepository.save(UserRefreshToken.from(refreshTokenIdxHash, dbUser, jwt.getRefreshToken()));
 
         return new LoginResponse(jwt.getAccessToken(), refreshTokenIdxHash);
     }
@@ -92,7 +94,7 @@ public class AuthService {
     @Transactional
     public RefreshAccessTokenResponse refreshAccessToken(String refreshTokenIdxHash) throws NoSuchAlgorithmException {
         // Refresh Token의 위치를 나타내는 해시 값을 통해 Refresh Token을 DB에서 찾음
-        UserRefreshTokenEntity refreshToken = userRefreshTokenRepository.getByIdxHash(refreshTokenIdxHash);
+        UserRefreshToken refreshToken = userRefreshTokenRepository.getByIdxHash(refreshTokenIdxHash);
 
         // TODO: Refresh Token의 만료 시간을 확인하고 만료되었으면 에러를 발생시키는 로직 추가
 
@@ -149,6 +151,7 @@ public class AuthService {
 
     }
 
+    // TODO: 이메일 인증하는 부분과 비슷한 코드가 많기 때문에 리팩토링 필요
     public void sendVerificationCode(PhoneVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
@@ -189,6 +192,7 @@ public class AuthService {
         });
     }
 
+    // TODO: 핸드폰 인증코드 확인 코드랑 비슷하기 때문에 리팩토링 필요
     public void verifyEmailVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
@@ -214,19 +218,19 @@ public class AuthService {
         String verificationCode = String.valueOf(redisTemplate.opsForValue().get(key));
 
         // 사용자가 보낸 인증코드와 Redis에 저장된 인증 코드가 동일한지 확인
-        if(!Objects.equals(verificationCode, verificationCodeRequest.getVerificationCode())) {
+        if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
             throw new BadVerificationCodeException(messageSource.getMessage("error.phone-verification-code.incorrect", null, locale));
         }
 
         // 사용자 휴대전화 번호 변경
-        UserEntity userEntity = userService.getNotDeletedUser(userId);
-        userEntity.changeUserPhone(verificationCodeRequest.getPhone());
+        userService.changeUserPhone(userId, verificationCodeRequest.getPhone());
 
         // Redis에 저장된 인증 코드 제거
         redisTemplate.delete(key);
     }
 
     // 이메일 혹은 휴대전화로 인증코드를 보내는 메서드
+    // TODO: 따로 인터페이스, 클래스로 빼야 함 (테스트 용이성)
     private String createVerificationCode(VERIFICATION_CODE_TYPE type) {
         String verificationCode;
         type.name();

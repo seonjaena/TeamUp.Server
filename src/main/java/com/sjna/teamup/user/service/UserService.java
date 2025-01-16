@@ -3,6 +3,9 @@ package com.sjna.teamup.user.service;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.sjna.teamup.auth.domain.UserRefreshToken;
+import com.sjna.teamup.auth.domain.UserRole;
+import com.sjna.teamup.auth.service.UserRoleService;
 import com.sjna.teamup.auth.service.port.UserRefreshTokenRepository;
 import com.sjna.teamup.auth.service.port.UserRoleRepository;
 import com.sjna.teamup.common.domain.exception.*;
@@ -12,9 +15,6 @@ import com.sjna.teamup.user.controller.request.SignUpRequest;
 import com.sjna.teamup.user.controller.response.ProfileImageUrlResponse;
 import com.sjna.teamup.user.controller.response.UserProfileInfoResponse;
 import com.sjna.teamup.user.domain.User;
-import com.sjna.teamup.user.infrastructure.UserEntity;
-import com.sjna.teamup.auth.infrastructure.UserRefreshTokenEntity;
-import com.sjna.teamup.auth.infrastructure.UserRoleEntity;
 import com.sjna.teamup.common.domain.FILTER_INCLUSION_MODE;
 import com.sjna.teamup.user.domain.USER_STATUS;
 import com.sjna.teamup.common.security.AuthUser;
@@ -35,7 +35,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -55,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 @Transactional(readOnly = true)
 public class UserService implements UserDetailsService {
 
+    private final UserRoleService userRoleService;
     @Value("${front.base-url}")
     private String frontBaseUrl;
 
@@ -91,45 +91,47 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
-        UserEntity userEntity;
+        User user;
         try {
-            userEntity = getNotDeletedUser(userId);
+            user = getNotDeletedUser(userId);
+            return new AuthUser(user.getAccountId(), user.getAccountPw(), user.getAuthorities(), user);
         }catch(UserIdNotFoundException e) {
             throw new UsernameNotFoundException(
                     messageSource.getMessage("error.user-id-pw.incorrect", null, LocaleContextHolder.getLocale())
             );
         }
-
-        Collection<SimpleGrantedAuthority> roles = new ArrayList<>();
-        roles.add(new SimpleGrantedAuthority(userEntity.getRole().getName()));
-
-        return new AuthUser(userEntity.getAccountId(), userEntity.getAccountPw(), roles, userEntity);
+        // TODO: Exception을 처리하는 catch 필요. ex: '인증 정보가 올바르지 않습니다. 다시 로그인 해주세요.'
     }
 
     public User getUser(String userId) {
         return userRepository.getUserByAccountId(userId);
     }
 
-    public UserEntity getUser(String userId, USER_STATUS[] userStatuses, FILTER_INCLUSION_MODE filterInclusionMode) {
-        UserEntity userEntity = getUser(userId);
+    public User getUser(String userId, USER_STATUS[] userStatuses, FILTER_INCLUSION_MODE filterInclusionMode) {
+        User user = getUser(userId);
         boolean statusMatched = Arrays.stream(userStatuses)
-                .anyMatch(status -> userEntity.getStatus() == status);
+                .anyMatch(status -> user.getStatus() == status);
 
-        if(filterInclusionMode == FILTER_INCLUSION_MODE.INCLUDE) {
-            if(statusMatched) {
-                return userEntity;
-            }
-        }else {
-            if(!statusMatched) {
-                return userEntity;
-            }
+        // TODO: 이 분기 로직을 별도의 클래스 혹은 메서드로 뺄 것인지 확인 필요
+        switch (filterInclusionMode) {
+            case INCLUDE:
+                if(statusMatched) {
+                    return user;
+                }
+                break;
+            case EXCLUDE:
+                if(!statusMatched) {
+                    return user;
+                }
+                break;
         }
+
         throw new UserIdNotFoundException(
                 messageSource.getMessage("error.user-id.incorrect", null, LocaleContextHolder.getLocale())
         );
     }
 
-    public UserEntity getNotDeletedUser(String userId) {
+    public User getNotDeletedUser(String userId) {
         return getUser(userId, new USER_STATUS[]{ USER_STATUS.DELETED }, FILTER_INCLUSION_MODE.EXCLUDE);
     }
 
@@ -154,6 +156,7 @@ public class UserService implements UserDetailsService {
          * 임시 닉네임 생성
          * 임시 닉네임 양식. {사용자의 이메일의 '@' 앞 부분}_{랜덤한 알파벳 혹은 숫자 5자리}
          */
+        // TODO: 테스트를 위해 어떻게 하면 좋을지 고민
         String tempNickname = signUpRequest.getEmail().substring(0, signUpRequest.getEmail().indexOf("@")) + "_" + RandomStringUtils.randomAlphanumeric(5);
 
         // 동일한 이메일이 이미 존재하는지 확인
@@ -162,17 +165,19 @@ public class UserService implements UserDetailsService {
         }
 
         // 사용자가 입력한 비밀번호와 비밀번호 확인이 동일한지 확인
+        // TODO: null 확인 로직 필요한지 고민 필요
         if(!signUpRequest.getUserPw().equals(signUpRequest.getUserPw2())) {
             throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
         }
 
         // 사용자의 권한을 가장 낮은 권한으로 세팅 (TODO: 권한에 대한 내용을 나중에 어떻게 활용할 것인지 상세하게 설정해야 함)
-        UserRoleEntity basicRole = userRoleRepository.findAll(Sort.by(Sort.Direction.ASC, "priority")).stream().findFirst()
+        // TODO: Service에서 다른 Service를 참조하는 것이 좋을지 아니면 Repository를 참조하는게 좋을지 판단 필요
+        UserRole basicRole = userRoleRepository.findAll(Sort.by(Sort.Direction.DESC, "priority")).stream().findFirst()
                 .orElseThrow(() -> new UserRoleNotExistException(
                         messageSource.getMessage("error.common.500", null, LocaleContextHolder.getLocale())
                 ));
 
-        UserEntity user = UserEntity.builder()
+        User user = User.builder()
                 .accountId(signUpRequest.getEmail())
                 .accountPw(passwordEncoder.encode(signUpRequest.getUserPw()))
                 .nickname(tempNickname)
@@ -187,10 +192,11 @@ public class UserService implements UserDetailsService {
 
     public void sendChangePasswordUrl(String userId) {
         Locale locale = LocaleContextHolder.getLocale();
-        UserEntity userEntity = getNotDeletedUser(userId);
+        User user = getNotDeletedUser(userId);
+        // TODO: 랜덤한 URL을 만드는 코드를 별도의 인터페이스와 클래스로 구현 (테스트 용이성)
         String randomValue = UUID.randomUUID().toString();
         // 비밀번호 수정을 위한 URL 생성
-        String url = makeChangePasswordUrl(userEntity.getAccountId(), randomValue);
+        String url = makeChangePasswordUrl(user.getAccountId(), randomValue);
 
         redisTemplate.execute(new SessionCallback<List<Object>>() {
             @Override
@@ -201,13 +207,13 @@ public class UserService implements UserDetailsService {
                      * 인증코드 Redis에 저장 (이미 존재한다면 제거하고 저장)
                      * Redis에 저장되는 인증 코드 양식. key=changePwdRandomValue_{사용자 이메일}, value={인증코드}, 유효기간=60분(수정 가능)
                      */
-                    operations.delete("changePwdRandomValue_" + userEntity.getAccountId());
-                    operations.opsForValue().set("changePwdRandomValue_" + userEntity.getAccountId(), randomValue, changePasswordValidMinute, TimeUnit.MINUTES);
+                    operations.delete("changePwdRandomValue_" + user.getAccountId());
+                    operations.opsForValue().set("changePwdRandomValue_" + user.getAccountId(), randomValue, changePasswordValidMinute, TimeUnit.MINUTES);
 
                     // TODO: 이메일의 내용에 해당 URL의 만료시간을 공지해야 함
                     String emailSubject = messageSource.getMessage("email.changePwd.subject", null, locale);
                     String emailBody = messageSource.getMessage("email.changePwd.body", new String[]{url, String.valueOf(changePasswordValidMinute)}, locale);
-                    emailSender.sendRawEmail(List.of(userEntity.getAccountId()), emailSubject, emailBody);
+                    emailSender.sendRawEmail(List.of(user.getAccountId()), emailSubject, emailBody);
 
                     return operations.exec();
                 }catch(SendEmailFailureException e) {
@@ -236,27 +242,28 @@ public class UserService implements UserDetailsService {
                 try {
                     operations.multi();
                     // 사용자가 보낸 랜덤값2와 저장된 인증 값이 동일한지 확인
-                    if(!Objects.equals(randomValue, changePasswordRequest.getRandomValue2())) {
+                    if(StringUtils.isEmpty(randomValue) || !randomValue.equals(changePasswordRequest.getRandomValue2())) {
                         throw new BadUrlChangePwException(messageSource.getMessage("error.change-pw.bad-url", null, locale));
                     }
 
-                    UserEntity userEntity = getNotDeletedUser(userId);
+                    User user = getNotDeletedUser(userId);
 
                     // 사용자가 보낸 변경할 비밀번호와 변경할 비밀번호 확인이 동일한지 확인
-                    if(!Objects.equals(changePasswordRequest.getUserPw(), changePasswordRequest.getUserPw2())) {
+                    if(changePasswordRequest.getUserPw() == null || !changePasswordRequest.getUserPw().equals(changePasswordRequest.getUserPw2())) {
                         throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
                     }
 
                     // 기존에 사용하던 비밀번호와 동일한 비밀번호로 변경하려고 하면 에러 발생
-                    if(passwordEncoder.matches(changePasswordRequest.getUserPw(), userEntity.getPassword())) {
+                    if(passwordEncoder.matches(changePasswordRequest.getUserPw(), user.getAccountPw())) {
                         throw new AlreadyUsingPassword(messageSource.getMessage("error.pw.already-using", null, locale));
                     }
 
                     // Redis에서 인증 값 제거 (인증 완료)
                     operations.delete("changePwdRandomValue_" + userId);
                     // 사용자 비밀번호 수정
-                    userEntity.changeUserPassword(serviceZoneId, passwordEncoder.encode(changePasswordRequest.getUserPw()));
-                    userRepository.saveAndFlush(userEntity);
+                    // TODO: 시간 바꾸는 기능을 밖으로 빼고 따로 인터페이스와 클래스로 구현 (테스트 용이성)
+                    user.changeUserPassword(serviceZoneId, passwordEncoder.encode(changePasswordRequest.getUserPw()));
+                    userRepository.saveAndFlush(user);
 
                     return operations.exec();
                 }catch(Exception e) {
@@ -272,13 +279,14 @@ public class UserService implements UserDetailsService {
     public void changePassword(String userId, LoginChangePasswordRequest changePasswordRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
-        UserEntity userEntity = getNotDeletedUser(userId);
+        User user = getNotDeletedUser(userId);
 
         String oldPw = changePasswordRequest.getOldPw();
         String userPw = changePasswordRequest.getUserPw();
         String userPw2 = changePasswordRequest.getUserPw2();
 
-        if(StringUtils.isBlank(oldPw) || !passwordEncoder.matches(oldPw, userEntity.getAccountPw())) {
+        // TODO: isBlank vs isEmpty 하나로 통일
+        if(StringUtils.isBlank(oldPw) || !passwordEncoder.matches(oldPw, user.getAccountPw())) {
             throw new OriginPasswordIncorrect(messageSource.getMessage("error.user-pw.incorrect", null, locale));
         }
 
@@ -290,17 +298,17 @@ public class UserService implements UserDetailsService {
             throw new AlreadyUsingPassword(messageSource.getMessage("error.pw.already-using", null, locale));
         }
 
-        userEntity.changeUserPassword(serviceZoneId, passwordEncoder.encode(userPw));
-        userRepository.save(userEntity);
+        user.changeUserPassword(serviceZoneId, passwordEncoder.encode(userPw));
+        userRepository.save(user);
     }
 
     @Transactional
     public void changeNickname(String userId, String userNickname) {
         Locale locale = LocaleContextHolder.getLocale();
 
-        UserEntity userEntity = getNotDeletedUser(userId);
+        User user = getNotDeletedUser(userId);
         // 본인이 이미 사용하고 있는 닉네임을 사용하는 경우 DB에 업데이트 할 필요 없음 (에러를 낼 필요도 없음)
-        if(Objects.equals(userNickname, userEntity.getNickname())) {
+        if(StringUtils.isBlank(userNickname) || userNickname.equals(user.getNickname())) {
             return;
         }
 
@@ -310,8 +318,8 @@ public class UserService implements UserDetailsService {
         }
 
         // 사용자 닉네임 수정
-        userEntity.changeUserNickname(userNickname);
-        userRepository.save(userEntity);
+        user.changeUserNickname(userNickname);
+        userRepository.save(user);
     }
 
     @Transactional
@@ -324,18 +332,20 @@ public class UserService implements UserDetailsService {
         }
 
         // 나이가 너무 적은지 확인
+        // TODO: 비정상적인 나이도 확인 ex: 300살
         if(!DateUtil.isOlderThanOrEqual(userBirth, minAge)) {
             throw new UserYoungException(messageSource.getMessage("error.age.too-young", new Short[]{minAge}, locale));
         }
 
         // 사용자 생년월일 수정
-        UserEntity userEntity = getNotDeletedUser(userId);
-        userEntity.changeBirth(userBirth);
-        userRepository.save(userEntity);
+        User user = getNotDeletedUser(userId);
+        user.changeBirth(userBirth);
+        userRepository.save(user);
     }
 
     @Transactional
     public void changeProfileImage(String userId, MultipartFile profileImage) {
+        // TODO: 테스트할 때 Locale이 Spring 객체라 귀찮을 것 같음
         Locale locale = LocaleContextHolder.getLocale();
         // 유저가 전송한 파일 검사
         validateProfileImage(locale, profileImage);
@@ -353,11 +363,12 @@ public class UserService implements UserDetailsService {
             String permanentName = String.format("%s/%s", profileImagePermanentDir, tempFileName);
 
             // 사용자 프로필 이미지 주소를 변경
-            UserEntity userEntity = getNotDeletedUser(userId);
-            userEntity.changeProfileImage(permanentName);
-            userRepository.save(userEntity);
+            User user = getNotDeletedUser(userId);
+            user.changeProfileImage(permanentName);
+            userRepository.save(user);
 
             // S3에 파일 업로드
+            // TODO: 테스트 환경에서는 s3가 없는데 어떻게 테스트할 것인지?
             s3Client.putObject(bucket, permanentName, file);
 
             // 임시 파일 삭제
@@ -367,10 +378,17 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    @Transactional
+    public void changeUserPhone(String userId, String userPhone) {
+        User user = getNotDeletedUser(userId);
+        user.changeUserPhone(userPhone);
+        userRepository.save(user);
+    }
+
     public ProfileImageUrlResponse getProfileImageUrl(String userId) {
         // 사용자의 프로필 이미지가 저장된 경로 알아옴
-        UserEntity userEntity = getNotDeletedUser(userId);
-        String imageFullRoute = userEntity.getProfileImage();
+        User user = getNotDeletedUser(userId);
+        String imageFullRoute = user.getProfileImage();
 
         String fileUrl;
 
@@ -385,10 +403,10 @@ public class UserService implements UserDetailsService {
     }
 
     public UserProfileInfoResponse getProfileInfo(String userId) {
-        UserEntity userEntity = getNotDeletedUser(userId);
-        UserProfileInfoResponse userProfileDto = new UserProfileInfoResponse(userEntity);
+        User user = getNotDeletedUser(userId);
+        UserProfileInfoResponse userProfileDto = new UserProfileInfoResponse(user);
 
-        String profileImage = userEntity.getProfileImage();
+        String profileImage = user.getProfileImage();
         String fileUrl;
 
         if(profileImage != null) {
@@ -403,24 +421,25 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void delete(String userId) {
-        UserEntity userEntity = getNotDeletedUser(userId);
-        Optional<UserRefreshTokenEntity> refreshToken = userRefreshTokenRepository.findByUser(userEntity);
+        User user = getNotDeletedUser(userId);
+        Optional<UserRefreshToken> refreshToken = userRefreshTokenRepository.findByUser(user);
         if(refreshToken.isPresent()) {
             userRefreshTokenRepository.delete(refreshToken.get());
         }
-        userEntity.delete();
+        user.delete();
     }
 
     @Transactional
     public void deleteTmp(String userId) {
-        UserEntity userEntity = getNotDeletedUser(userId);
-        Optional<UserRefreshTokenEntity> refreshToken = userRefreshTokenRepository.findByUser(userEntity);
+        User user = getNotDeletedUser(userId);
+        Optional<UserRefreshToken> refreshToken = userRefreshTokenRepository.findByUser(user);
         if(refreshToken.isPresent()) {
             userRefreshTokenRepository.delete(refreshToken.get());
         }
-        userRepository.delete(userEntity);
+        userRepository.delete(user);
     }
 
+    // TODO: S3에 완전히 의존적인 메서드이기 때문에 테스트할 경우 어려움이 있을 수 있음. 어떻게 할 것인지 고민 필요.
     private String getFilePreSignedUrl(String bucketName, String s3FileFullPath) {
 
         Locale locale = LocaleContextHolder.getLocale();
@@ -445,6 +464,7 @@ public class UserService implements UserDetailsService {
         return preSignedURL;
     }
 
+    // TODO: S3에 완전히 의존적인 메서드이기 때문에 테스트할 경우 어려움이 있을 수 있음. 어떻게 할 것인지 고민 필요. 그리고 private 메서드는 테스트가 불가능 함.
     private boolean isFileExistsInStorage(String bucketName, String s3FileFullPath) {
         if(StringUtils.isEmpty(s3FileFullPath)) {
             return false;
@@ -452,12 +472,14 @@ public class UserService implements UserDetailsService {
         return s3Client.doesObjectExist(bucketName, s3FileFullPath);
     }
 
+    // TODO: private 메서드는 테스트가 불가능함.
     private String makeChangePasswordUrl(String userId, String randomValue) {
         String encryptedUserId = encryptionProvider.encrypt(userId);
         // Query Parameter로 사용자 ID를 암호화 한 값과 인증값을 넘기도록 함
         return String.format("%s/account/changePwd?random1=%s&random2=%s", frontBaseUrl, encryptedUserId, randomValue);
     }
 
+    // TODO: private 메서드는 테스트가 불가능함.
     private void validateProfileImage(Locale locale, MultipartFile profileImage) {
         short minFileMB = 0;
         short maxFileMB = 5;

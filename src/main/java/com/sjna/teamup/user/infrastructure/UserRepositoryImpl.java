@@ -18,21 +18,6 @@ public class UserRepositoryImpl implements UserRepository {
     private final MessageSource messageSource;
 
     @Override
-    public Optional<User> findByAccountIdAndStatus(String userId, USER_STATUS userStatus) {
-        return userJpaRepository.findByAccountIdAndStatus(userId, userStatus).map(UserEntity::toDomain);
-    }
-
-    @Override
-    public Optional<User> findActiveUserByAccountId(String userId) {
-        return userJpaRepository.findByAccountIdAndStatus(userId, USER_STATUS.NORMAL).map(UserEntity::toDomain);
-    }
-
-    @Override
-    public Optional<User> findByAccountId(String userId) {
-        return userJpaRepository.findByAccountId(userId).map(UserEntity::toDomain);
-    }
-
-    @Override
     public User getUserByAccountId(String userId) {
         return userJpaRepository.findByAccountId(userId)
                 .orElseThrow(() -> new UserIdNotFoundException(

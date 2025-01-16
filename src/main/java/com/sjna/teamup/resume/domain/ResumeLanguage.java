@@ -12,7 +12,7 @@ public class ResumeLanguage {
     private String type;
     private Short grade;
 
-    public static ResumeLanguage of(Resume resume, String type, Short grade) {
+    public static ResumeLanguage from(Resume resume, String type, Short grade) {
         return ResumeLanguage.builder()
                 .resume(resume)
                 .type(type)

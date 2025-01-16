@@ -10,9 +10,9 @@ import java.util.Collection;
 @Getter
 public class AuthUser extends User {
 
-    private final UserEntity user;
+    private final com.sjna.teamup.user.domain.User user;
 
-    public AuthUser(String username, String password, Collection<? extends GrantedAuthority> authorities, UserEntity user) {
+    public AuthUser(String username, String password, Collection<? extends GrantedAuthority> authorities, com.sjna.teamup.user.domain.User user) {
         super(username, password, authorities);
         this.user = user;
     }

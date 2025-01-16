@@ -30,6 +30,11 @@ public class UserRefreshTokenRepositoryImpl implements UserRefreshTokenRepositor
     }
 
     @Override
+    public void delete(UserRefreshToken userRefreshToken) {
+        userRefreshTokenJpaRepository.delete(UserRefreshTokenEntity.fromDomain(userRefreshToken));
+    }
+
+    @Override
     public void deleteAndFlush(UserRefreshToken userRefreshToken) {
         userRefreshTokenJpaRepository.delete(UserRefreshTokenEntity.fromDomain(userRefreshToken));
         em.flush();

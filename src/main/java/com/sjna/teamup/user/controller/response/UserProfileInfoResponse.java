@@ -1,6 +1,6 @@
 package com.sjna.teamup.user.controller.response;
 
-import com.sjna.teamup.user.infrastructure.UserEntity;
+import com.sjna.teamup.user.domain.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import java.time.LocalDate;
@@ -18,7 +18,7 @@ public class UserProfileInfoResponse {
     private String userPhone;
     private LocalDateTime lastPwdModifiedDateTime;
 
-    public UserProfileInfoResponse(UserEntity user) {
+    public UserProfileInfoResponse(User user) {
         this.userId = user.getAccountId();
         this.userName = user.getName();
         this.userBirth = user.getBirth();
