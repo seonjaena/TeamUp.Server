@@ -1,15 +1,23 @@
 package com.sjna.teamup.common.filter;
 
+import com.sjna.teamup.common.domain.exception.UnAuthenticatedException;
+import com.sjna.teamup.common.domain.exception.UserIdNotFoundException;
+import com.sjna.teamup.common.security.AuthUser;
 import com.sjna.teamup.common.security.JwtProvider;
+import com.sjna.teamup.user.controller.port.UserService;
+import com.sjna.teamup.user.domain.User;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
@@ -18,16 +26,27 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private final UserService userService;
     private final JwtProvider jwtProvider;
+    private final MessageSource messageSource;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         String token = jwtProvider.parseToken(request)
                 .orElse("");
 
-        if(StringUtils.hasText(token) && !jwtProvider.isTokenExpired(token)) {
-            Authentication authentication = jwtProvider.getAuthUserInfo(token);
+        jwtProvider.validateToken(token);
+        String userId = jwtProvider.getUserId(token);
+
+        try {
+            User user = userService.getNotDeletedUser(userId);
+            UserDetails authUser = new AuthUser(user.getAccountId(), user.getAccountPw(), user.getAuthorities(), user);
+            Authentication authentication = new UsernamePasswordAuthenticationToken(authUser, "", authUser.getAuthorities());
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
+        }catch(UserIdNotFoundException e) {
+            // 부정한 방법으로 접속하는 사용자에게 정보를 주지 않기 위해 다른 예외로 바꿔서 throw
+            throw new UnAuthenticatedException(messageSource.getMessage("notice.re-login.request", null, LocaleContextHolder.getLocale()));
         }
 
         chain.doFilter(request, response);

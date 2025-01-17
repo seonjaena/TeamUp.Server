@@ -1,6 +1,7 @@
 package com.sjna.teamup.auth.controller;
 
 import com.sjna.teamup.auth.controller.port.AuthService;
+import com.sjna.teamup.auth.controller.port.UserTokenService;
 import com.sjna.teamup.auth.controller.request.LoginRequest;
 import com.sjna.teamup.auth.controller.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.request.PhoneVerificationCodeRequest;
@@ -20,6 +21,7 @@ import java.security.Principal;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserTokenService userTokenService;
 
     @PostMapping
     public LoginResponse login(@Valid @RequestBody LoginRequest loginRequestDto) throws NoSuchAlgorithmException {
@@ -28,7 +30,7 @@ public class AuthController {
 
     @GetMapping(value = "/renewal")
         public RefreshAccessTokenResponse refreshAccessToken(@RequestParam(name = "refreshTokenIdxHash") String refreshTokenIdxHash) throws NoSuchAlgorithmException {
-        return authService.refreshAccessToken(refreshTokenIdxHash);
+        return userTokenService.refreshAccessToken(refreshTokenIdxHash);
     }
 
     @PostMapping(value = "/email-verification-code")

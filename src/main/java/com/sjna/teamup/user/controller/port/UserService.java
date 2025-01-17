@@ -8,11 +8,10 @@ import com.sjna.teamup.user.controller.response.ProfileImageUrlResponse;
 import com.sjna.teamup.user.controller.response.UserProfileInfoResponse;
 import com.sjna.teamup.user.domain.USER_STATUS;
 import com.sjna.teamup.user.domain.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 
-public interface UserService extends UserDetailsService {
+public interface UserService {
 
     User getUser(String userId);
     User getUser(String userId, USER_STATUS[] userStatuses, FILTER_INCLUSION_MODE filterInclusionMode);
@@ -31,6 +30,5 @@ public interface UserService extends UserDetailsService {
     ProfileImageUrlResponse getProfileImageUrl(String userId);
     UserProfileInfoResponse getProfileInfo(String userId);
     void delete(String userId);
-    void deleteTmp(String userId);
 
 }

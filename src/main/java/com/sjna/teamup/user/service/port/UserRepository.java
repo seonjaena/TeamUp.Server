@@ -10,7 +10,6 @@ public interface UserRepository {
     User getUserByAccountId(String userId);
     User save(User user);
     User saveAndFlush(User user);
-    void delete(User user);
     boolean isExistsAccountId(String userId);
     boolean isExistsNickname(String userNickname);
     boolean isExistsPhone(String phone);

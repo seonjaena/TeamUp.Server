@@ -3,7 +3,6 @@ package com.sjna.teamup.common.security;
 import com.sjna.teamup.common.domain.Jwt;
 import com.sjna.teamup.common.domain.exception.UnAuthenticatedException;
 import com.sjna.teamup.common.domain.exception.UnAuthorizedException;
-import com.sjna.teamup.user.controller.port.UserService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -11,9 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import javax.crypto.SecretKey;
@@ -27,7 +23,6 @@ public class JwtProvider {
 
     private final Key key;
     private final Header header;
-    private final UserService userService;
     private final MessageSource messageSource;
     private final static String AUTHORIZATION_HEADER = "Authorization";
     private final static String BEARER_PREFIX = "Bearer";
@@ -39,13 +34,12 @@ public class JwtProvider {
     @Value("${jwt.expire.refresh}")
     private Long refreshTokenExpireMilliSec;
 
-    public JwtProvider(@Value("${jwt.secret}") String secretKey, UserService userService, MessageSource messageSource) {
+    public JwtProvider(@Value("${jwt.secret}") String secretKey, MessageSource messageSource) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         Jwts.HeaderBuilder header = Jwts.header();
         header.setType("JWT");
         this.header = header.build();
-        this.userService = userService;
         this.messageSource = messageSource;
     }
 
@@ -79,12 +73,12 @@ public class JwtProvider {
      * @param token
      * @return
      */
-    public Authentication getAuthUserInfo(String token) {
+    public void validateToken(String token) {
         Claims claims = parseClaims(token);
         String userId = claims.getSubject();
 
-        // token에 userId 정보가 있는지 확인
-        if(!StringUtils.hasText(userId)) {
+        // token에 userId 정보가 있는지 확인 & 만료되지 않았는지 확인
+        if(!StringUtils.hasText(userId) || claims.getExpiration().before(new Date())) {
             throw new UnAuthenticatedException(
                     messageSource.getMessage("notice.re-login.request", null, LocaleContextHolder.getLocale())
             );
@@ -96,11 +90,6 @@ public class JwtProvider {
                     messageSource.getMessage("notice.re-login.request", null, LocaleContextHolder.getLocale())
             );
         }
-
-
-        UserDetails authUser = userService.loadUserByUsername(userId);
-
-        return new UsernamePasswordAuthenticationToken(authUser, "", authUser.getAuthorities());
     }
 
     /**
@@ -116,16 +105,6 @@ public class JwtProvider {
             return Optional.of(authorization.substring(7));
         }
         return Optional.ofNullable(null);
-    }
-
-    /**
-     * 사용자의 JWT의 만료 여부를 반환
-     * @param token
-     * @return
-     */
-    public boolean isTokenExpired(String token) {
-        Claims claims = parseClaims(token);
-        return claims.getExpiration().before(new Date());
     }
 
     /**

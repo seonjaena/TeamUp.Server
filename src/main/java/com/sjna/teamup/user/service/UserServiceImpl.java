@@ -4,8 +4,7 @@ import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.sjna.teamup.auth.controller.port.UserRoleService;
-import com.sjna.teamup.auth.domain.UserRefreshToken;
-import com.sjna.teamup.auth.service.port.UserRefreshTokenRepository;
+import com.sjna.teamup.auth.controller.port.UserTokenService;
 import com.sjna.teamup.common.domain.exception.*;
 import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.controller.request.ChangePasswordRequest;
@@ -16,7 +15,6 @@ import com.sjna.teamup.user.controller.response.UserProfileInfoResponse;
 import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.common.domain.FILTER_INCLUSION_MODE;
 import com.sjna.teamup.user.domain.USER_STATUS;
-import com.sjna.teamup.common.security.AuthUser;
 import com.sjna.teamup.common.infrastructure.sender.EmailSender;
 import com.sjna.teamup.common.security.EncryptionProvider;
 import com.sjna.teamup.user.service.port.UserRepository;
@@ -33,8 +31,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,25 +75,11 @@ public class UserServiceImpl implements UserService {
     private final EmailSender emailSender;
     private final EncryptionProvider encryptionProvider;
     private final UserRepository userRepository;
-    private final UserRefreshTokenRepository userRefreshTokenRepository;
+    private final UserTokenService userTokenService;
     private final UserRoleService userRoleService;
     private final PasswordEncoder passwordEncoder;
     private final MessageSource messageSource;
     private final AmazonS3Client s3Client;
-
-    @Override
-    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
-        User user;
-        try {
-            user = getNotDeletedUser(userId);
-            return new AuthUser(user.getAccountId(), user.getAccountPw(), user.getAuthorities(), user);
-        }catch(UserIdNotFoundException e) {
-            throw new UsernameNotFoundException(
-                    messageSource.getMessage("error.user-id-pw.incorrect", null, LocaleContextHolder.getLocale())
-            );
-        }
-        // TODO: Exception을 처리하는 catch 필요. ex: '인증 정보가 올바르지 않습니다. 다시 로그인 해주세요.'
-    }
 
     public User getUser(String userId) {
         return userRepository.getUserByAccountId(userId);
@@ -412,21 +394,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void delete(String userId) {
         User user = getNotDeletedUser(userId);
-        Optional<UserRefreshToken> refreshToken = userRefreshTokenRepository.findByUser(user);
-        if(refreshToken.isPresent()) {
-            userRefreshTokenRepository.delete(refreshToken.get());
-        }
+        userTokenService.deleteRefreshTokenByUser(user);
         user.delete();
-    }
-
-    @Transactional
-    public void deleteTmp(String userId) {
-        User user = getNotDeletedUser(userId);
-        Optional<UserRefreshToken> refreshToken = userRefreshTokenRepository.findByUser(user);
-        if(refreshToken.isPresent()) {
-            userRefreshTokenRepository.delete(refreshToken.get());
-        }
-        userRepository.delete(user);
     }
 
     // TODO: S3에 완전히 의존적인 메서드이기 때문에 테스트할 경우 어려움이 있을 수 있음. 어떻게 할 것인지 고민 필요.
