@@ -3,7 +3,7 @@ package com.sjna.teamup.common.security;
 import com.sjna.teamup.common.domain.Jwt;
 import com.sjna.teamup.common.domain.exception.UnAuthenticatedException;
 import com.sjna.teamup.common.domain.exception.UnAuthorizedException;
-import com.sjna.teamup.user.service.UserService;
+import com.sjna.teamup.user.controller.port.UserService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

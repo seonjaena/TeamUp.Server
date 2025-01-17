@@ -1,16 +1,16 @@
 package com.sjna.teamup.resume.service;
 
+import com.sjna.teamup.resume.controller.port.ResumeService;
 import com.sjna.teamup.resume.controller.request.AddResumeRequest;
 import com.sjna.teamup.resume.controller.response.ResumeResponse;
 import com.sjna.teamup.resume.domain.Resume;
 import com.sjna.teamup.resume.domain.ResumeLanguage;
 import com.sjna.teamup.resume.service.port.ResumeLanguageRepository;
 import com.sjna.teamup.resume.service.port.ResumeRepository;
+import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.domain.User;
-import com.sjna.teamup.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
@@ -21,9 +21,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ResumeService {
+public class ResumeServiceImpl implements ResumeService {
 
-    private final MessageSource messageSource;
     private final UserService userService;
     private final ResumeRepository resumeRepository;
     private final ResumeLanguageRepository resumeLanguageRepository;

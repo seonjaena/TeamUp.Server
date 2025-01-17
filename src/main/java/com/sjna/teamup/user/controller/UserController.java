@@ -1,11 +1,11 @@
 package com.sjna.teamup.user.controller;
 
+import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.controller.request.ChangePasswordRequest;
 import com.sjna.teamup.user.controller.request.LoginChangePasswordRequest;
 import com.sjna.teamup.user.controller.request.SignUpRequest;
 import com.sjna.teamup.user.controller.response.ProfileImageUrlResponse;
 import com.sjna.teamup.user.controller.response.UserProfileInfoResponse;
-import com.sjna.teamup.user.service.UserService;
 import com.sjna.teamup.common.controller.constraint.UserIdConstraint;
 import com.sjna.teamup.common.controller.constraint.UserNicknameConstraint;
 import jakarta.validation.Valid;

@@ -3,12 +3,11 @@ package com.sjna.teamup.user.service;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.sjna.teamup.auth.controller.port.UserRoleService;
 import com.sjna.teamup.auth.domain.UserRefreshToken;
-import com.sjna.teamup.auth.domain.UserRole;
-import com.sjna.teamup.auth.service.UserRoleService;
 import com.sjna.teamup.auth.service.port.UserRefreshTokenRepository;
-import com.sjna.teamup.auth.service.port.UserRoleRepository;
 import com.sjna.teamup.common.domain.exception.*;
+import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.controller.request.ChangePasswordRequest;
 import com.sjna.teamup.user.controller.request.LoginChangePasswordRequest;
 import com.sjna.teamup.user.controller.request.SignUpRequest;
@@ -31,12 +30,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -52,9 +49,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserService implements UserDetailsService {
+public class UserServiceImpl implements UserService {
 
-    private final UserRoleService userRoleService;
     @Value("${front.base-url}")
     private String frontBaseUrl;
 
@@ -83,8 +79,8 @@ public class UserService implements UserDetailsService {
     private final EmailSender emailSender;
     private final EncryptionProvider encryptionProvider;
     private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
+    private final UserRoleService userRoleService;
     private final PasswordEncoder passwordEncoder;
     private final MessageSource messageSource;
     private final AmazonS3Client s3Client;
@@ -171,17 +167,11 @@ public class UserService implements UserDetailsService {
         }
 
         // 사용자의 권한을 가장 낮은 권한으로 세팅 (TODO: 권한에 대한 내용을 나중에 어떻게 활용할 것인지 상세하게 설정해야 함)
-        // TODO: Service에서 다른 Service를 참조하는 것이 좋을지 아니면 Repository를 참조하는게 좋을지 판단 필요
-        UserRole basicRole = userRoleRepository.findAll(Sort.by(Sort.Direction.DESC, "priority")).stream().findFirst()
-                .orElseThrow(() -> new UserRoleNotExistException(
-                        messageSource.getMessage("error.common.500", null, LocaleContextHolder.getLocale())
-                ));
-
         User user = User.builder()
                 .accountId(signUpRequest.getEmail())
                 .accountPw(passwordEncoder.encode(signUpRequest.getUserPw()))
                 .nickname(tempNickname)
-                .role(basicRole)
+                .role(userRoleService.getBasic())
                 .status(USER_STATUS.NORMAL)
                 .name(signUpRequest.getName())
                 .build();

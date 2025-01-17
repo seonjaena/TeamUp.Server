@@ -1,9 +1,9 @@
 package com.sjna.teamup.common.config;
 
+import com.sjna.teamup.auth.controller.port.UserRoleService;
 import com.sjna.teamup.common.filter.JwtAuthenticationFilter;
 import com.sjna.teamup.common.security.CustomAccessDeniedHandler;
 import com.sjna.teamup.common.security.CustomAuthenticationEntryPoint;
-import com.sjna.teamup.auth.service.UserRoleService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

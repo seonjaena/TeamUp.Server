@@ -1,8 +1,8 @@
 package com.sjna.teamup.resume.controller;
 
+import com.sjna.teamup.resume.controller.port.ResumeService;
 import com.sjna.teamup.resume.controller.request.AddResumeRequest;
 import com.sjna.teamup.resume.controller.response.ResumeResponse;
-import com.sjna.teamup.resume.service.ResumeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

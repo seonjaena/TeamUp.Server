@@ -1,5 +1,6 @@
 package com.sjna.teamup.auth.service;
 
+import com.sjna.teamup.auth.controller.port.AuthService;
 import com.sjna.teamup.auth.domain.UserRefreshToken;
 import com.sjna.teamup.auth.service.port.UserRefreshTokenRepository;
 import com.sjna.teamup.common.domain.exception.*;
@@ -9,13 +10,13 @@ import com.sjna.teamup.auth.controller.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.request.PhoneVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.response.LoginResponse;
 import com.sjna.teamup.auth.controller.response.RefreshAccessTokenResponse;
+import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.user.domain.USER_STATUS;
 import com.sjna.teamup.auth.domain.VERIFICATION_CODE_TYPE;
 import com.sjna.teamup.common.security.JwtProvider;
 import com.sjna.teamup.common.infrastructure.sender.EmailSender;
 import com.sjna.teamup.common.infrastructure.sender.SMSSender;
-import com.sjna.teamup.user.service.UserService;
 import com.sjna.teamup.common.util.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AuthService {
+public class AuthServiceImpl implements AuthService {
 
     @Value("${service.email.verification.valid-minute:10}")
     private Integer emailVerificationValidMinute;

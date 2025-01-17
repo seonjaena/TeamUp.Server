@@ -1,9 +1,13 @@
 package com.sjna.teamup.auth.service;
 
+import com.sjna.teamup.auth.controller.port.UserRoleService;
 import com.sjna.teamup.auth.domain.UserRole;
 import com.sjna.teamup.auth.service.port.UserRoleRepository;
+import com.sjna.teamup.common.domain.exception.UserRoleNotExistException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import java.util.Arrays;
@@ -11,12 +15,20 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class UserRoleService {
+public class UserRoleServiceImpl implements UserRoleService {
 
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
+    private final MessageSource messageSource;
     private final UserRoleRepository userRoleRepository;
+
+    public UserRole getBasic() {
+        return userRoleRepository.findAll(Sort.by(Sort.Direction.DESC, "priority")).stream().findFirst()
+                .orElseThrow(() -> new UserRoleNotExistException(
+                        messageSource.getMessage("error.common.500", null, LocaleContextHolder.getLocale())
+                ));
+    }
 
     public String getRoleHierarchy() {
         // local 프로필인 경우 In Memory DB를 사용하기 때문에 USER_ROLE에 기본 데이터를 넣어준다.

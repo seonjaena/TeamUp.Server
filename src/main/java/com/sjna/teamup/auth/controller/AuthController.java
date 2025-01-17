@@ -1,11 +1,11 @@
 package com.sjna.teamup.auth.controller;
 
+import com.sjna.teamup.auth.controller.port.AuthService;
 import com.sjna.teamup.auth.controller.request.LoginRequest;
 import com.sjna.teamup.auth.controller.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.request.PhoneVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.response.LoginResponse;
 import com.sjna.teamup.auth.controller.response.RefreshAccessTokenResponse;
-import com.sjna.teamup.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
