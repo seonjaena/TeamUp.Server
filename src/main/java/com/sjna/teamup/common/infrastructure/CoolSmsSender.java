@@ -1,27 +1,29 @@
-package com.sjna.teamup.common.infrastructure.sender;
+package com.sjna.teamup.common.infrastructure;
 
-import lombok.extern.slf4j.Slf4j;
+import com.sjna.teamup.common.service.port.SmsSender;
+import jakarta.annotation.PostConstruct;
 import net.nurigo.sdk.NurigoApp;
 import net.nurigo.sdk.message.model.Message;
 import net.nurigo.sdk.message.request.SingleMessageSendingRequest;
 import net.nurigo.sdk.message.response.SingleMessageSentResponse;
 import net.nurigo.sdk.message.service.DefaultMessageService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-public class SMSSender {
+public class CoolSmsSender implements SmsSender {
 
     @Value("${cloud.cool-sms.send-phone}")
     private String sendEmail;
+    @Value("${cloud.cool-sms.credentials.access-key}")
+    private String accessKey;
+    @Value("${cloud.cool-sms.credentials.secret-key}")
+    private String secretKey;
 
-    private final DefaultMessageService messageService;
-    private final MessageSource messageSource;
+    private DefaultMessageService messageService;
 
-    public SMSSender(MessageSource messageSource, @Value("${cloud.cool-sms.credentials.access-key}") String accessKey, @Value("${cloud.cool-sms.credentials.secret-key}") String secretKey) {
-        this.messageSource = messageSource;
+    @PostConstruct
+    private void init() {
         this.messageService = NurigoApp.INSTANCE.initialize(accessKey, secretKey, "https://api.coolsms.co.kr");
     }
 
@@ -31,8 +33,7 @@ public class SMSSender {
         message.setTo(to);
         message.setText(messageText);
 
-        SingleMessageSentResponse response = this.messageService.sendOne(new SingleMessageSendingRequest(message));
-        return response;
+        return this.messageService.sendOne(new SingleMessageSendingRequest(message));
     }
 
 }

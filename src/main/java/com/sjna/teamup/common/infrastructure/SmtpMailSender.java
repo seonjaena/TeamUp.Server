@@ -1,6 +1,7 @@
-package com.sjna.teamup.common.infrastructure.sender;
+package com.sjna.teamup.common.infrastructure;
 
 import com.sjna.teamup.common.domain.exception.SendEmailFailureException;
+import com.sjna.teamup.common.service.port.MailSender;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +18,9 @@ import java.util.List;
 @Component
 @Primary
 @RequiredArgsConstructor
-public class SmtpEmailSender implements EmailSender {
+public class SmtpMailSender implements MailSender {
 
-    private final JavaMailSender emailSender;
+    private final JavaMailSender mailSender;
     private final MessageSource messageSource;
 
     @Value("${spring.mail.from}")
@@ -28,7 +29,7 @@ public class SmtpEmailSender implements EmailSender {
     @Override
     public void sendRawEmail(List<String> to, String subject, String content) {
         try {
-            MimeMessage mimeMessage = emailSender.createMimeMessage();
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
 
             helper.setFrom(from);
@@ -36,7 +37,7 @@ public class SmtpEmailSender implements EmailSender {
             helper.setSubject(subject);
             helper.setText(content, true);
 
-            emailSender.send(mimeMessage);
+            mailSender.send(mimeMessage);
         }catch(Exception e) {
             log.error(e.getMessage());
             throw new SendEmailFailureException(

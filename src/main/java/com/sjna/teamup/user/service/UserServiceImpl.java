@@ -15,7 +15,7 @@ import com.sjna.teamup.user.controller.response.UserProfileInfoResponse;
 import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.common.domain.FILTER_INCLUSION_MODE;
 import com.sjna.teamup.user.domain.USER_STATUS;
-import com.sjna.teamup.common.infrastructure.sender.EmailSender;
+import com.sjna.teamup.common.service.port.MailSender;
 import com.sjna.teamup.common.security.EncryptionProvider;
 import com.sjna.teamup.user.service.port.UserRepository;
 import io.micrometer.common.util.StringUtils;
@@ -72,7 +72,7 @@ public class UserServiceImpl implements UserService {
     private String serviceZoneId;
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final EmailSender emailSender;
+    private final MailSender mailSender;
     private final EncryptionProvider encryptionProvider;
     private final UserRepository userRepository;
     private final UserTokenService userTokenService;
@@ -185,7 +185,7 @@ public class UserServiceImpl implements UserService {
                     // TODO: 이메일의 내용에 해당 URL의 만료시간을 공지해야 함
                     String emailSubject = messageSource.getMessage("email.changePwd.subject", null, locale);
                     String emailBody = messageSource.getMessage("email.changePwd.body", new String[]{url, String.valueOf(changePasswordValidMinute)}, locale);
-                    emailSender.sendRawEmail(List.of(user.getAccountId()), emailSubject, emailBody);
+                    mailSender.sendRawEmail(List.of(user.getAccountId()), emailSubject, emailBody);
 
                     return operations.exec();
                 }catch(SendEmailFailureException e) {

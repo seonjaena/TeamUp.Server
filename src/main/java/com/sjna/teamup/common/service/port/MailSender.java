@@ -1,10 +1,9 @@
-package com.sjna.teamup.common.infrastructure.sender;
+package com.sjna.teamup.common.service.port;
 
 import java.util.List;
 
-public interface EmailSender {
+public interface MailSender {
 
     void sendRawEmail(List<String> to, String subject, String content);
-
 
 }

@@ -1,8 +1,9 @@
-package com.sjna.teamup.common.infrastructure.sender;
+package com.sjna.teamup.common.infrastructure;
 
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.*;
 import com.sjna.teamup.common.domain.exception.SendEmailFailureException;
+import com.sjna.teamup.common.service.port.MailSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +16,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SESEmailSender implements EmailSender {
+public class SesMailSender implements MailSender {
 
     private final AmazonSimpleEmailService amazonSimpleEmailService;
     private final MessageSource messageSource;

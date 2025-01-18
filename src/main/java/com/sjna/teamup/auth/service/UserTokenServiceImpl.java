@@ -35,7 +35,7 @@ public class UserTokenServiceImpl implements UserTokenService {
         // Refresh Token의 위치를 나타내는 해시 값을 통해 Refresh Token을 DB에서 찾음
         UserRefreshToken refreshToken = userRefreshTokenRepository.getByIdxHash(refreshTokenIdxHash);
 
-        // TODO: Refresh Token의 만료 시간을 확인하고 만료되었으면 에러를 발생시키는 로직 추가
+        jwtProvider.validateToken(refreshToken.getValue());
 
         // Refresh Token을 통해서 사용자 ID와 Role을 얻어옴
         String userId = jwtProvider.getUserId(refreshToken.getValue());

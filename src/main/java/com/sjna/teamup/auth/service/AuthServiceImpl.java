@@ -9,13 +9,13 @@ import com.sjna.teamup.auth.controller.request.LoginRequest;
 import com.sjna.teamup.auth.controller.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.request.PhoneVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.response.LoginResponse;
+import com.sjna.teamup.common.service.port.SmsSender;
 import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.user.domain.USER_STATUS;
 import com.sjna.teamup.auth.domain.VERIFICATION_CODE_TYPE;
 import com.sjna.teamup.common.security.JwtProvider;
-import com.sjna.teamup.common.infrastructure.sender.EmailSender;
-import com.sjna.teamup.common.infrastructure.sender.SMSSender;
+import com.sjna.teamup.common.service.port.MailSender;
 import com.sjna.teamup.common.util.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,8 +54,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
-    private final EmailSender emailSender;
-    private final SMSSender smsSender;
+    private final MailSender mailSender;
+    private final SmsSender smsSender;
     private final MessageSource messageSource;
 
     @Transactional
@@ -118,7 +118,7 @@ public class AuthServiceImpl implements AuthService {
                     String emailSubject = messageSource.getMessage("email.verification.subject", null, locale);
                     String emailBody = messageSource.getMessage("email.verification.body", new String[]{verificationCode, String.valueOf(emailVerificationValidMinute)}, locale);
                     // 사용자에게 이메일 전송
-                    emailSender.sendRawEmail(List.of(verificationCodeRequest.getEmail()), emailSubject, emailBody);
+                    mailSender.sendRawEmail(List.of(verificationCodeRequest.getEmail()), emailSubject, emailBody);
 
                     return operations.exec();
                 }catch(SendEmailFailureException e) {
@@ -135,13 +135,13 @@ public class AuthServiceImpl implements AuthService {
     public void sendVerificationCode(PhoneVerificationCodeRequest verificationCodeRequest) {
         Locale locale = LocaleContextHolder.getLocale();
 
+        // 인증 코드 생성
+        String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.PHONE);
+
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
         if(!userService.checkUserPhoneAvailable(verificationCodeRequest.getPhone())) {
             throw new AlreadyUserPhoneExistsException(messageSource.getMessage("error.phone.already-exist", null, locale));
         }
-
-        // 인증 코드 생성
-        String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.PHONE);
 
         redisTemplate.execute(new SessionCallback<List<Object>>() {
             @Override
