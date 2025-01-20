@@ -4,8 +4,6 @@ import com.sjna.teamup.common.domain.exception.UserIdNotFoundException;
 import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.user.service.port.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -13,14 +11,11 @@ import org.springframework.stereotype.Repository;
 public class UserRepositoryImpl implements UserRepository {
 
     private final UserJpaRepository userJpaRepository;
-    private final MessageSource messageSource;
 
     @Override
     public User getUserByAccountId(String userId) {
         return userJpaRepository.findByAccountId(userId)
-                .orElseThrow(() -> new UserIdNotFoundException(
-                        messageSource.getMessage("error.user-id.incorrect", null, LocaleContextHolder.getLocale())
-                )).toDomain();
+                .orElseThrow(() -> new UserIdNotFoundException("User Not Found. userId=" + userId)).toDomain();
     }
 
     @Override

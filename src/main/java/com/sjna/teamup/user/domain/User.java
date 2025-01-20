@@ -1,14 +1,13 @@
 package com.sjna.teamup.user.domain;
 
 import com.sjna.teamup.auth.domain.UserRole;
+import com.sjna.teamup.common.service.port.ClockHolder;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 
@@ -48,9 +47,14 @@ public class User {
         this.status = USER_STATUS.DELETED;
     }
 
-    public void changeUserPassword(String serviceZoneId, String userPw) {
+    public void changeUserPassword(String userPw, ClockHolder clockHolder) {
         this.accountPw = userPw;
-        this.lastAccountPwModified = LocalDateTime.now(ZoneId.of(serviceZoneId));
+        this.lastAccountPwModified = clockHolder.getCurrentDateTime();
+    }
+
+    public String getChangePasswordUrl(String frontBaseUrl, String randomValue1, String randomValue2) {
+        // Query Parameter로 사용자 ID를 암호화 한 값과 인증값을 넘기도록 함
+        return String.format("%s/account/changePwd?random1=%s&random2=%s", frontBaseUrl, randomValue1, randomValue2);
     }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {

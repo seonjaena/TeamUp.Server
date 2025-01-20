@@ -2,12 +2,12 @@ package com.sjna.teamup.common.controller;
 
 import com.sjna.teamup.common.controller.response.ExceptionResponse;
 import com.sjna.teamup.common.domain.exception.*;
+import com.sjna.teamup.common.service.port.LocaleHolder;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 public class ExceptionRestController {
 
     private final MessageSource messageSource;
+    private final LocaleHolder localeHolder;
 
     @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(value = { UnAuthenticatedException.class, UsernameNotFoundException.class })
@@ -243,7 +244,7 @@ public class ExceptionRestController {
         log.warn(e.getClass().getName());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                        messageSource.getMessage("error.common.500", null, LocaleContextHolder.getLocale())
+                        messageSource.getMessage("error.common.500", null, localeHolder.getLocale())
                 ));
     }
 

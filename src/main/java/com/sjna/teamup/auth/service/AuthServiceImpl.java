@@ -9,6 +9,7 @@ import com.sjna.teamup.auth.controller.request.LoginRequest;
 import com.sjna.teamup.auth.controller.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.request.PhoneVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.response.LoginResponse;
+import com.sjna.teamup.common.service.port.LocaleHolder;
 import com.sjna.teamup.common.service.port.SmsSender;
 import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.domain.User;
@@ -23,7 +24,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -57,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
     private final MailSender mailSender;
     private final SmsSender smsSender;
     private final MessageSource messageSource;
+    private final LocaleHolder localeHolder;
 
     @Transactional
     public LoginResponse login(LoginRequest loginRequest) throws NoSuchAlgorithmException {
@@ -68,12 +69,12 @@ public class AuthServiceImpl implements AuthService {
         if(!passwordEncoder.matches(loginRequest.getUserPw(), dbUser.getAccountPw())) {
             log.warn("Password is incorrect. userId={}", loginRequest.getUserId());
             throw new UnAuthenticatedException(
-                    messageSource.getMessage("error.user-id-pw.incorrect", null, LocaleContextHolder.getLocale())
+                    messageSource.getMessage("error.user-id-pw.incorrect", null, localeHolder.getLocale())
             );
         }
 
         if(dbUser.getStatus() == USER_STATUS.DELETED) {
-            throw new DeletedUserException(messageSource.getMessage("notice.deleted-user", null, LocaleContextHolder.getLocale()));
+            throw new DeletedUserException(messageSource.getMessage("notice.deleted-user", null, localeHolder.getLocale()));
         }
 
         // JWT Token 생성(Refresh, Access)
@@ -92,7 +93,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public void sendVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         // 이메일 인증 코드 생성
         String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.EMAIL);
@@ -133,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
 
     // TODO: 이메일 인증하는 부분과 비슷한 코드가 많기 때문에 리팩토링 필요
     public void sendVerificationCode(PhoneVerificationCodeRequest verificationCodeRequest) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         // 인증 코드 생성
         String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.PHONE);
@@ -174,7 +175,7 @@ public class AuthServiceImpl implements AuthService {
 
     // TODO: 핸드폰 인증코드 확인 코드랑 비슷하기 때문에 리팩토링 필요
     public void verifyEmailVerificationCode(EmailVerificationCodeRequest verificationCodeRequest) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         // Redis에 저장되는 인증 코드 양식. key=verificationCode_{사용자 이메일}
         String key = "verificationCode_" + verificationCodeRequest.getEmail();
@@ -191,7 +192,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Transactional
     public void verifyPhoneVerificationCode(String userId, PhoneVerificationCodeRequest verificationCodeRequest) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         // Redis에 저장되는 인증 코드 양식. key=verificationCode_{사용자 전화번호}
         String key = "verificationCode_" + verificationCodeRequest.getPhone();

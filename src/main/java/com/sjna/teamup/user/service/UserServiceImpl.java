@@ -6,6 +6,9 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.sjna.teamup.auth.controller.port.UserRoleService;
 import com.sjna.teamup.auth.controller.port.UserTokenService;
 import com.sjna.teamup.common.domain.exception.*;
+import com.sjna.teamup.common.service.port.ClockHolder;
+import com.sjna.teamup.common.service.port.LocaleHolder;
+import com.sjna.teamup.common.service.port.UuidHolder;
 import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.controller.request.ChangePasswordRequest;
 import com.sjna.teamup.user.controller.request.LoginChangePasswordRequest;
@@ -26,7 +29,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -68,9 +70,6 @@ public class UserServiceImpl implements UserService {
     @Value("${service.profile-image.permanent-dir}")
     private String profileImagePermanentDir;
 
-    @Value("${service.zone-id:Asia/Seoul}")
-    private String serviceZoneId;
-
     private final RedisTemplate<String, Object> redisTemplate;
     private final MailSender mailSender;
     private final EncryptionProvider encryptionProvider;
@@ -80,9 +79,19 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final MessageSource messageSource;
     private final AmazonS3Client s3Client;
+    private final ClockHolder clockHolder;
+    private final UuidHolder uuidHolder;
+    private final LocaleHolder localeHolder;
 
     public User getUser(String userId) {
-        return userRepository.getUserByAccountId(userId);
+        try {
+            return userRepository.getUserByAccountId(userId);
+        }catch(UserIdNotFoundException e) {
+            log.warn(e.getMessage());
+            throw new UserIdNotFoundException(
+                    messageSource.getMessage("error.user-id.incorrect", null, localeHolder.getLocale())
+            );
+        }
     }
 
     public User getUser(String userId, USER_STATUS[] userStatuses, FILTER_INCLUSION_MODE filterInclusionMode) {
@@ -105,7 +114,7 @@ public class UserServiceImpl implements UserService {
         }
 
         throw new UserIdNotFoundException(
-                messageSource.getMessage("error.user-id.incorrect", null, LocaleContextHolder.getLocale())
+                messageSource.getMessage("error.user-id.incorrect", null, localeHolder.getLocale())
         );
     }
 
@@ -128,7 +137,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void signUp(SignUpRequest signUpRequest) {
 
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         /**
          * 임시 닉네임 생성
@@ -163,12 +172,15 @@ public class UserServiceImpl implements UserService {
     }
 
     public void sendChangePasswordUrl(String userId) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
         User user = getNotDeletedUser(userId);
         // TODO: 랜덤한 URL을 만드는 코드를 별도의 인터페이스와 클래스로 구현 (테스트 용이성)
-        String randomValue = UUID.randomUUID().toString();
+        // TODO: User Domain 클래스에 구현해도 될 것 같음
+        // TODO: randomValue1(암호화된 사용자 ID)가 요청할 때마다 변경되는 것을 확인해야 함
         // 비밀번호 수정을 위한 URL 생성
-        String url = makeChangePasswordUrl(user.getAccountId(), randomValue);
+        String encryptedUserId = encryptionProvider.encrypt(user.getAccountId());
+        String randomValue = uuidHolder.random();
+        String url = user.getChangePasswordUrl(frontBaseUrl, encryptedUserId, randomValue);
 
         redisTemplate.execute(new SessionCallback<List<Object>>() {
             @Override
@@ -199,7 +211,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     public void findPassword(ChangePasswordRequest changePasswordRequest) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         // 사용자가 보낸 랜덤값1을 복호화 (사용자 ID)
         String userId = encryptionProvider.decrypt(changePasswordRequest.getRandomValue1());
@@ -233,8 +245,7 @@ public class UserServiceImpl implements UserService {
                     // Redis에서 인증 값 제거 (인증 완료)
                     operations.delete("changePwdRandomValue_" + userId);
                     // 사용자 비밀번호 수정
-                    // TODO: 시간 바꾸는 기능을 밖으로 빼고 따로 인터페이스와 클래스로 구현 (테스트 용이성)
-                    user.changeUserPassword(serviceZoneId, passwordEncoder.encode(changePasswordRequest.getUserPw()));
+                    user.changeUserPassword(passwordEncoder.encode(changePasswordRequest.getUserPw()), clockHolder);
                     userRepository.saveAndFlush(user);
 
                     return operations.exec();
@@ -249,7 +260,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     public void changePassword(String userId, LoginChangePasswordRequest changePasswordRequest) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         User user = getNotDeletedUser(userId);
 
@@ -270,13 +281,13 @@ public class UserServiceImpl implements UserService {
             throw new AlreadyUsingPassword(messageSource.getMessage("error.pw.already-using", null, locale));
         }
 
-        user.changeUserPassword(serviceZoneId, passwordEncoder.encode(userPw));
+        user.changeUserPassword(passwordEncoder.encode(userPw), clockHolder);
         userRepository.save(user);
     }
 
     @Transactional
     public void changeNickname(String userId, String userNickname) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         User user = getNotDeletedUser(userId);
         // 본인이 이미 사용하고 있는 닉네임을 사용하는 경우 DB에 업데이트 할 필요 없음 (에러를 낼 필요도 없음)
@@ -296,7 +307,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     public void changeBirth(String userId, LocalDate userBirth) {
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         // 실제로 존재하는 날짜인지 검사
         if(!DateUtil.isExistDate(userBirth)) {
@@ -318,13 +329,14 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void changeProfileImage(String userId, MultipartFile profileImage) {
         // TODO: 테스트할 때 Locale이 Spring 객체라 귀찮을 것 같음
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
         // 유저가 전송한 파일 검사
         validateProfileImage(locale, profileImage);
 
+        // TODO: 랜덤한 파일명을 만드는 코드를 User Domain 클래스에 메서드로 구현
         String fileName = profileImage.getOriginalFilename();
         String fileExtension = FilenameUtils.getExtension(fileName);
-        String tempFileName = String.format("%s.%s", UUID.randomUUID(), fileExtension);
+        String tempFileName = String.format("%s.%s", uuidHolder.random(), fileExtension);
 
         try {
             // 임시 파일 생성
@@ -401,7 +413,7 @@ public class UserServiceImpl implements UserService {
     // TODO: S3에 완전히 의존적인 메서드이기 때문에 테스트할 경우 어려움이 있을 수 있음. 어떻게 할 것인지 고민 필요.
     private String getFilePreSignedUrl(String bucketName, String s3FileFullPath) {
 
-        Locale locale = LocaleContextHolder.getLocale();
+        Locale locale = localeHolder.getLocale();
 
         // 파일이 존재하지 않는다면 에러 발생
         if(!isFileExistsInStorage(bucketName, s3FileFullPath)) {

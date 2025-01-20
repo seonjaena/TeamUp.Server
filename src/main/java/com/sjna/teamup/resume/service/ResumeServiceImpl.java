@@ -1,5 +1,7 @@
 package com.sjna.teamup.resume.service;
 
+import com.sjna.teamup.common.domain.exception.ResumeNotFoundException;
+import com.sjna.teamup.common.service.port.LocaleHolder;
 import com.sjna.teamup.resume.controller.port.ResumeService;
 import com.sjna.teamup.resume.controller.request.AddResumeRequest;
 import com.sjna.teamup.resume.controller.response.ResumeResponse;
@@ -11,6 +13,7 @@ import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
@@ -26,6 +29,8 @@ public class ResumeServiceImpl implements ResumeService {
     private final UserService userService;
     private final ResumeRepository resumeRepository;
     private final ResumeLanguageRepository resumeLanguageRepository;
+    private final MessageSource messageSource;
+    private final LocaleHolder localeHolder;
 
     @Transactional
     public void addResume(AddResumeRequest resumeRequest, String userId) {
@@ -59,7 +64,15 @@ public class ResumeServiceImpl implements ResumeService {
 
     public ResumeResponse getResume(String userId) {
         User user = userService.getNotDeletedUser(userId);
-        Resume resume = resumeRepository.getByUser(user);
+        Resume resume;
+        try {
+            resume = resumeRepository.getByUser(user);
+        }catch(ResumeNotFoundException e) {
+            log.warn(e.getMessage());
+            throw new ResumeNotFoundException(
+                    messageSource.getMessage("error.resume.not-found", null, localeHolder.getLocale()));
+        }
+
         List<ResumeLanguage> resumeLanguages = resumeLanguageRepository.findAllByResume(resume);
         return new ResumeResponse(resume, resumeLanguages);
     }

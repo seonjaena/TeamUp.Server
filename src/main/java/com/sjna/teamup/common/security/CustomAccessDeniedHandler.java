@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -39,7 +38,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         response.getWriter()
                 .write(objectMapper.writeValueAsString(
                         new ExceptionResponse("Unauthorized",
-                                messageSource.getMessage("error.common.403", null, LocaleContextHolder.getLocale())
+                                messageSource.getMessage("error.common.403", null, request.getLocale())
                         )
                 ));
     }
