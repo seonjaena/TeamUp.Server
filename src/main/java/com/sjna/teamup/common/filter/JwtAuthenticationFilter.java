@@ -33,10 +33,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
-        String token = jwtProvider.parseToken(request)
-                .orElse("");
+        String token = jwtProvider.parseToken(request).get();
 
-        jwtProvider.validateToken(token);
         String userId = jwtProvider.getUserId(token);
 
         try {
@@ -52,5 +50,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(request, response);
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        try {
+            String token = jwtProvider.parseToken(request).orElse("");
+            jwtProvider.validateToken(token);
+            return false;
+        }catch(Exception e) {
+            return true;
+        }
     }
 }

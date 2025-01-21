@@ -1,6 +1,9 @@
 package com.sjna.teamup.common.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sjna.teamup.common.controller.response.ExceptionResponse;
+import com.sjna.teamup.common.domain.ValidationException;
 import com.sjna.teamup.common.domain.exception.*;
 import com.sjna.teamup.common.service.port.LocaleHolder;
 import jakarta.validation.ConstraintViolation;
@@ -12,20 +15,18 @@ import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
 @RestControllerAdvice
 public class ExceptionRestController {
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final MessageSource messageSource;
     private final LocaleHolder localeHolder;
 
@@ -78,23 +79,32 @@ public class ExceptionRestController {
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    public ResponseEntity methodArgumentNotValidException(MethodArgumentNotValidException e) {
-        List<ObjectError> errors = e.getBindingResult().getAllErrors();
-        String errorMsgCode = errors.get(0).getDefaultMessage();
+    public ResponseEntity methodArgumentNotValidException(MethodArgumentNotValidException e) throws JsonProcessingException {
+        String errStr = e.getBindingResult().getFieldError().getDefaultMessage();
+
+        ValidationException exception = objectMapper.readValue(errStr, ValidationException.class);;
+
+        String errMsg = messageSource.getMessage(exception.getErrCode(), exception.getParams(), localeHolder.getLocale());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ExceptionResponse(HttpStatus.BAD_REQUEST.getReasonPhrase(), errorMsgCode));
+                .body(new ExceptionResponse(HttpStatus.BAD_REQUEST.getReasonPhrase(), errMsg));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = ConstraintViolationException.class)
     public ResponseEntity constraintArgumentException(ConstraintViolationException e) {
-        String errorMessage = e.getConstraintViolations()
-                .stream()
-                .map(ConstraintViolation::getMessage)
-                .collect(Collectors.joining(", "));
+        String errStr = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).findFirst().get();
+        ValidationException exception;
+        try {
+             exception = objectMapper.readValue(errStr, ValidationException.class);
+        }catch(Exception ex) {
+            exception = new ValidationException(errStr, null);
+        }
+
+        String errMsg = messageSource.getMessage(exception.getErrCode(), exception.getParams(), localeHolder.getLocale());
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ExceptionResponse("Bad Request", errorMessage));
+                .body(new ExceptionResponse(HttpStatus.BAD_REQUEST.getReasonPhrase(), errMsg));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

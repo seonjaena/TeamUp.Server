@@ -1,19 +1,18 @@
 package com.sjna.teamup.common.controller.validator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sjna.teamup.common.domain.VALID_REGEX;
 import com.sjna.teamup.common.controller.constraint.UserPwConstraint;
+import com.sjna.teamup.common.domain.ValidationException;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 
-@RequiredArgsConstructor
 public class UserPwValidator implements ConstraintValidator<UserPwConstraint, String> {
 
     private String message;
-    private final MessageSource messageSource;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public void initialize(UserPwConstraint constraintAnnotation) {
@@ -24,10 +23,15 @@ public class UserPwValidator implements ConstraintValidator<UserPwConstraint, St
     @Override
     public boolean isValid(String userPw, ConstraintValidatorContext context) {
         if(userPw == null || !userPw.matches(VALID_REGEX.USER_PW.getRegexp())) {
-            String errorMessage = messageSource.getMessage(this.message, null, LocaleContextHolder.getLocale());
             context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(errorMessage)
-                    .addConstraintViolation();
+
+            ValidationException exception = new ValidationException(this.message, null);
+            try {
+                context.buildConstraintViolationWithTemplate(objectMapper.writeValueAsString(exception))
+                        .addConstraintViolation();
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
             return false;
         }
 
