@@ -11,7 +11,6 @@ If you create a profile, leaders of other teams that need members can scout you.
 ---
 
 ## Development Principle
-### Assign one ticket per function.
 
 ### Logging level
 #### trace
@@ -31,16 +30,16 @@ If you create a profile, leaders of other teams that need members can scout you.
 
 #### warn
 ```text
-* User Input is not appropriate
-* Unauthenticated request
-* Unauthorized request
+- User Input is not appropriate
+- Unauthenticated request
+- Unauthorized request
 ```
 
 #### error
 ```text
-// Error log makes alarm and this makes developers tired.
+// Error log makes alarm
 
-* System Internal Error
+- System Internal Error
 ```
 ---
 
