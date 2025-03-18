@@ -36,14 +36,14 @@ public class UserController {
     public boolean checkUserIdAvailable(
             @Pattern(regexp = "^[a-zA-Z90-9\\-_]{5,20}$", message = "constraint.user-id.pattern")
             @PathVariable(name = "userId") String userId) {
-        return userService.checkUserIdAvailable(userId);
+        return userService.isUserIdAvailable(userId);
     }
 
     @GetMapping(value = "/available/userNickname/{userNickname}")
     public boolean checkUserNicknameAvailable(
             @Pattern(regexp = "^[a-zA-Z0-9가-힣]{2,10}$", message = "constraint.user-nickname.pattern")
             @PathVariable(name = "userNickname") String userNickname) {
-        return userService.checkUserNicknameAvailable(userNickname);
+        return userService.isUserNicknameAvailable(userNickname);
     }
 
     @PostMapping

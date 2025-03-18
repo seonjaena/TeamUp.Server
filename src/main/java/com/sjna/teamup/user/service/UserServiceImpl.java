@@ -122,15 +122,15 @@ public class UserServiceImpl implements UserService {
         return getUser(userId, new USER_STATUS[]{ USER_STATUS.DELETED }, FILTER_INCLUSION_MODE.EXCLUDE);
     }
 
-    public boolean checkUserIdAvailable(String userId) {
+    public boolean isUserIdAvailable(String userId) {
         return !userRepository.isExistsAccountId(userId);
     }
 
-    public boolean checkUserPhoneAvailable(String phone) {
+    public boolean isUserPhoneAvailable(String phone) {
         return !userRepository.isExistsPhone(phone);
     }
 
-    public boolean checkUserNicknameAvailable(String userNickname) {
+    public boolean isUserNicknameAvailable(String userNickname) {
         return !userRepository.isExistsNickname(userNickname);
     }
 
@@ -147,7 +147,7 @@ public class UserServiceImpl implements UserService {
         String tempNickname = signUpRequest.getEmail().substring(0, signUpRequest.getEmail().indexOf("@")) + "_" + RandomStringUtils.randomAlphanumeric(5);
 
         // 동일한 이메일이 이미 존재하는지 확인
-        if(!checkUserIdAvailable(signUpRequest.getEmail())) {
+        if(!isUserIdAvailable(signUpRequest.getEmail())) {
             throw new AlreadyUserEmailExistsException(messageSource.getMessage("error.email.already-exist", null, locale));
         }
 
@@ -163,7 +163,7 @@ public class UserServiceImpl implements UserService {
                 .accountPw(passwordEncoder.encode(signUpRequest.getUserPw()))
                 .nickname(tempNickname)
                 .role(userRoleService.getBasic())
-                .status(USER_STATUS.NORMAL)
+                .status(USER_STATUS.ACTIVE)
                 .name(signUpRequest.getName())
                 .build();
 
@@ -296,7 +296,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 만약 이미 존재하는 사용자의 닉네임으로 변경할 경우 막음
-        if(!checkUserNicknameAvailable(userNickname)) {
+        if(!isUserNicknameAvailable(userNickname)) {
             throw new AlreadyUserNicknameExistsException(messageSource.getMessage("error.nickname.already-exist", null, locale));
         }
 

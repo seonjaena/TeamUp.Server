@@ -16,9 +16,9 @@ public interface UserService {
     User getUser(String userId);
     User getUser(String userId, USER_STATUS[] userStatuses, FILTER_INCLUSION_MODE filterInclusionMode);
     User getNotDeletedUser(String userId);
-    boolean checkUserIdAvailable(String userId);
-    boolean checkUserPhoneAvailable(String phone);
-    boolean checkUserNicknameAvailable(String userNickname);
+    boolean isUserIdAvailable(String userId);
+    boolean isUserPhoneAvailable(String phone);
+    boolean isUserNicknameAvailable(String userNickname);
     void signUp(SignUpRequest signUpRequest);
     void sendChangePasswordUrl(String userId);
     void findPassword(ChangePasswordRequest changePasswordRequest);

@@ -3,9 +3,10 @@ package com.sjna.teamup.user.domain;
 import com.sjna.teamup.common.domain.EnumConverter;
 import com.sjna.teamup.common.domain.EnumFlag;
 
-public enum USER_STATUS implements EnumFlag {
+public enum USER_STATUS implements EnumFlag<USER_STATUS> {
 
-    NORMAL('N')
+    NONE('N')
+    , ACTIVE('A')
     , DELETED('D')
     ;
 
@@ -16,7 +17,7 @@ public enum USER_STATUS implements EnumFlag {
     }
 
     @Override
-    public Character get() {
+    public Character getFlag() {
         return this.flag;
     }
 

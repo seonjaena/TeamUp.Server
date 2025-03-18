@@ -3,24 +3,21 @@ package com.sjna.teamup.auth.service;
 import com.sjna.teamup.auth.controller.port.AuthService;
 import com.sjna.teamup.auth.domain.UserRefreshToken;
 import com.sjna.teamup.auth.service.port.UserRefreshTokenRepository;
+import com.sjna.teamup.auth.service.port.VerificationCodeHolder;
 import com.sjna.teamup.common.domain.exception.*;
 import com.sjna.teamup.common.domain.Jwt;
 import com.sjna.teamup.auth.controller.request.LoginRequest;
 import com.sjna.teamup.auth.controller.request.EmailVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.request.PhoneVerificationCodeRequest;
 import com.sjna.teamup.auth.controller.response.LoginResponse;
-import com.sjna.teamup.common.service.port.LocaleHolder;
-import com.sjna.teamup.common.service.port.SmsSender;
+import com.sjna.teamup.common.service.port.*;
 import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.user.domain.USER_STATUS;
-import com.sjna.teamup.auth.domain.VERIFICATION_CODE_TYPE;
 import com.sjna.teamup.common.security.JwtProvider;
-import com.sjna.teamup.common.service.port.MailSender;
 import com.sjna.teamup.common.util.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
@@ -34,7 +31,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -58,6 +54,11 @@ public class AuthServiceImpl implements AuthService {
     private final SmsSender smsSender;
     private final MessageSource messageSource;
     private final LocaleHolder localeHolder;
+    private final VerificationCodeHolder verificationCodeHolder;
+    private final TimeUnitHolder mailTimeUnitHolder;
+    private final TimeUnitHolder phoneTimeUnitHolder;
+    private final UuidHolder uuidHolder;
+    private final RandomDigitsHolder randomDigitsHolder;
 
     @Transactional
     public LoginResponse login(LoginRequest loginRequest) throws NoSuchAlgorithmException {
@@ -96,10 +97,10 @@ public class AuthServiceImpl implements AuthService {
         Locale locale = localeHolder.getLocale();
 
         // 이메일 인증 코드 생성
-        String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.EMAIL);
+        String verificationCode = verificationCodeHolder.createEmailVerificationCode(uuidHolder);
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
-        if(!userService.checkUserIdAvailable(verificationCodeRequest.getEmail())) {
+        if(!userService.isUserIdAvailable(verificationCodeRequest.getEmail())) {
             throw new AlreadyUserEmailExistsException(messageSource.getMessage("error.email.already-exist", null, locale));
         }
 
@@ -113,7 +114,7 @@ public class AuthServiceImpl implements AuthService {
                      * Redis에 저장되는 인증 코드 양식. key=verificationCode_{사용자 이메일}, value={인증코드}, 유효기간=10분(수정 가능)
                      */
                     operations.delete("verificationCode_" + verificationCodeRequest.getEmail());
-                    operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getEmail(), verificationCode, emailVerificationValidMinute, TimeUnit.MINUTES);
+                    operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getEmail(), verificationCode, emailVerificationValidMinute, mailTimeUnitHolder.getTimeUnit());
 
                     // TODO: 이메일의 내용에 해당 인증 코드의 만료시간을 공지해야 함
                     String emailSubject = messageSource.getMessage("email.verification.subject", null, locale);
@@ -137,10 +138,10 @@ public class AuthServiceImpl implements AuthService {
         Locale locale = localeHolder.getLocale();
 
         // 인증 코드 생성
-        String verificationCode = createVerificationCode(VERIFICATION_CODE_TYPE.PHONE);
+        String verificationCode = verificationCodeHolder.createPhoneVerificationCode(8, randomDigitsHolder);
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
-        if(!userService.checkUserPhoneAvailable(verificationCodeRequest.getPhone())) {
+        if(!userService.isUserPhoneAvailable(verificationCodeRequest.getPhone())) {
             throw new AlreadyUserPhoneExistsException(messageSource.getMessage("error.phone.already-exist", null, locale));
         }
 
@@ -155,7 +156,7 @@ public class AuthServiceImpl implements AuthService {
                      * Redis에 저장되는 인증 코드 양식. key=verificationCode_{사용자 전화번호}, value={인증코드}, 유효기간=10분(수정 가능)
                      */
                     operations.delete("verificationCode_" + verificationCodeRequest.getPhone());
-                    operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getPhone(), verificationCode, phoneVerificationValidMinute, TimeUnit.MINUTES);
+                    operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getPhone(), verificationCode, phoneVerificationValidMinute, phoneTimeUnitHolder.getTimeUnit());
 
                     // TODO: SMS의 내용에 해당 인증 코드의 만료시간을 공지해야 함
                     String smsBody = messageSource.getMessage("phone.verification.body", new String[]{verificationCode}, locale);
@@ -209,23 +210,4 @@ public class AuthServiceImpl implements AuthService {
         // Redis에 저장된 인증 코드 제거
         redisTemplate.delete(key);
     }
-
-    // 이메일 혹은 휴대전화로 인증코드를 보내는 메서드
-    // TODO: 따로 인터페이스, 클래스로 빼야 함 (테스트 용이성)
-    private String createVerificationCode(VERIFICATION_CODE_TYPE type) {
-        String verificationCode;
-        type.name();
-        switch (type) {
-            case EMAIL:
-                verificationCode = UUID.randomUUID().toString().replace("-", "");
-                break;
-            case PHONE:
-                verificationCode = RandomStringUtils.randomNumeric(8);
-                break;
-            default:
-                verificationCode = null;
-        }
-        return verificationCode;
-    }
-
 }

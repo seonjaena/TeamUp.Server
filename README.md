@@ -1,6 +1,7 @@
 # Team Up Platform Server Program
 
 ## About Program
+
 This is a program that helps carry out team projects.<br/>
 You can make private or public channel and invite team members to your channel.<br/>
 Private channels are not visible to others.<br/>

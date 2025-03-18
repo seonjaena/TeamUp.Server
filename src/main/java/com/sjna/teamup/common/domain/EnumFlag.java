@@ -1,7 +1,7 @@
 package com.sjna.teamup.common.domain;
 
-public interface EnumFlag {
+public interface EnumFlag<E extends Enum<E>> {
 
-    Character get();
+    Character getFlag();
 
 }

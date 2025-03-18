@@ -39,8 +39,8 @@ public class AuthController {
     }
 
     @PostMapping(value = "/phone-verification-code")
-    public void sendPhoneVerificationCode(@Valid @RequestBody PhoneVerificationCodeRequest phoneVerificationCodeRequest) {
-        authService.sendVerificationCode(phoneVerificationCodeRequest);
+    public void sendPhoneVerificationCode(@Valid @RequestBody PhoneVerificationCodeRequest verificationCodeRequest) {
+        authService.sendVerificationCode(verificationCodeRequest);
     }
 
     @PatchMapping(value = "/email-verification")

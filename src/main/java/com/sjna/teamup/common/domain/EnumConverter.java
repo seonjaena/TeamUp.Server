@@ -4,7 +4,7 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 @Converter
-public class EnumConverter<T extends Enum<T> & EnumFlag> implements AttributeConverter<T, Character> {
+public class EnumConverter<T extends Enum<T> & EnumFlag<T>> implements AttributeConverter<T, Character> {
 
     private final Class<T> clazz;
 
@@ -14,7 +14,7 @@ public class EnumConverter<T extends Enum<T> & EnumFlag> implements AttributeCon
 
     @Override
     public Character convertToDatabaseColumn(T attribute) {
-        return attribute == null ? null : attribute.get();
+        return attribute == null ? null : attribute.getFlag();
     }
 
     @Override
@@ -24,7 +24,7 @@ public class EnumConverter<T extends Enum<T> & EnumFlag> implements AttributeCon
         }
         T[] enums = clazz.getEnumConstants();
         for (T anEnum : enums) {
-            if (anEnum.get() == dbData) {
+            if (anEnum.getFlag() == dbData) {
                 return anEnum;
             }
         }
