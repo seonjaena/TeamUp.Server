@@ -6,9 +6,7 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.sjna.teamup.auth.controller.port.UserRoleService;
 import com.sjna.teamup.auth.controller.port.UserTokenService;
 import com.sjna.teamup.common.domain.exception.*;
-import com.sjna.teamup.common.service.port.ClockHolder;
-import com.sjna.teamup.common.service.port.LocaleHolder;
-import com.sjna.teamup.common.service.port.UuidHolder;
+import com.sjna.teamup.common.service.port.*;
 import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.controller.request.ChangePasswordRequest;
 import com.sjna.teamup.user.controller.request.LoginChangePasswordRequest;
@@ -18,7 +16,6 @@ import com.sjna.teamup.user.controller.response.UserProfileInfoResponse;
 import com.sjna.teamup.user.domain.User;
 import com.sjna.teamup.common.domain.FILTER_INCLUSION_MODE;
 import com.sjna.teamup.user.domain.USER_STATUS;
-import com.sjna.teamup.common.service.port.MailSender;
 import com.sjna.teamup.common.security.EncryptionProvider;
 import com.sjna.teamup.user.service.port.UserRepository;
 import io.micrometer.common.util.StringUtils;
@@ -28,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -77,7 +73,7 @@ public class UserServiceImpl implements UserService {
     private final UserTokenService userTokenService;
     private final UserRoleService userRoleService;
     private final PasswordEncoder passwordEncoder;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final AmazonS3Client s3Client;
     private final ClockHolder clockHolder;
     private final UuidHolder uuidHolder;
@@ -89,7 +85,7 @@ public class UserServiceImpl implements UserService {
         }catch(UserIdNotFoundException e) {
             log.warn(e.getMessage());
             throw new UserIdNotFoundException(
-                    messageSource.getMessage("error.user-id.incorrect", null, localeHolder.getLocale())
+                    messageSourceHolder.getMessage("error.user-id.incorrect", null, localeHolder.getLocale())
             );
         }
     }
@@ -114,7 +110,7 @@ public class UserServiceImpl implements UserService {
         }
 
         throw new UserIdNotFoundException(
-                messageSource.getMessage("error.user-id.incorrect", null, localeHolder.getLocale())
+                messageSourceHolder.getMessage("error.user-id.incorrect", null, localeHolder.getLocale())
         );
     }
 
@@ -148,13 +144,13 @@ public class UserServiceImpl implements UserService {
 
         // 동일한 이메일이 이미 존재하는지 확인
         if(!isUserIdAvailable(signUpRequest.getEmail())) {
-            throw new AlreadyUserEmailExistsException(messageSource.getMessage("error.email.already-exist", null, locale));
+            throw new AlreadyUserEmailExistsException(messageSourceHolder.getMessage("error.email.already-exist", null, locale));
         }
 
         // 사용자가 입력한 비밀번호와 비밀번호 확인이 동일한지 확인
         // TODO: null 확인 로직 필요한지 고민 필요
         if(!signUpRequest.getUserPw().equals(signUpRequest.getUserPw2())) {
-            throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
+            throw new UserPwPw2DifferentException(messageSourceHolder.getMessage("error.pw-pw2.different", null, locale));
         }
 
         // 사용자의 권한을 가장 낮은 권한으로 세팅 (TODO: 권한에 대한 내용을 나중에 어떻게 활용할 것인지 상세하게 설정해야 함)
@@ -195,8 +191,8 @@ public class UserServiceImpl implements UserService {
                     operations.opsForValue().set("changePwdRandomValue_" + user.getAccountId(), randomValue, changePasswordValidMinute, TimeUnit.MINUTES);
 
                     // TODO: 이메일의 내용에 해당 URL의 만료시간을 공지해야 함
-                    String emailSubject = messageSource.getMessage("email.changePwd.subject", null, locale);
-                    String emailBody = messageSource.getMessage("email.changePwd.body", new String[]{url, String.valueOf(changePasswordValidMinute)}, locale);
+                    String emailSubject = messageSourceHolder.getMessage("email.changePwd.subject", null, locale);
+                    String emailBody = messageSourceHolder.getMessage("email.changePwd.body", new String[]{url, String.valueOf(changePasswordValidMinute)}, locale);
                     mailSender.sendRawEmail(List.of(user.getAccountId()), emailSubject, emailBody);
 
                     return operations.exec();
@@ -227,19 +223,19 @@ public class UserServiceImpl implements UserService {
                     operations.multi();
                     // 사용자가 보낸 랜덤값2와 저장된 인증 값이 동일한지 확인
                     if(StringUtils.isEmpty(randomValue) || !randomValue.equals(changePasswordRequest.getRandomValue2())) {
-                        throw new BadUrlChangePwException(messageSource.getMessage("error.change-pw.bad-url", null, locale));
+                        throw new BadUrlChangePwException(messageSourceHolder.getMessage("error.change-pw.bad-url", null, locale));
                     }
 
                     User user = getNotDeletedUser(userId);
 
                     // 사용자가 보낸 변경할 비밀번호와 변경할 비밀번호 확인이 동일한지 확인
                     if(changePasswordRequest.getUserPw() == null || !changePasswordRequest.getUserPw().equals(changePasswordRequest.getUserPw2())) {
-                        throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
+                        throw new UserPwPw2DifferentException(messageSourceHolder.getMessage("error.pw-pw2.different", null, locale));
                     }
 
                     // 기존에 사용하던 비밀번호와 동일한 비밀번호로 변경하려고 하면 에러 발생
                     if(passwordEncoder.matches(changePasswordRequest.getUserPw(), user.getAccountPw())) {
-                        throw new AlreadyUsingPassword(messageSource.getMessage("error.pw.already-using", null, locale));
+                        throw new AlreadyUsingPassword(messageSourceHolder.getMessage("error.pw.already-using", null, locale));
                     }
 
                     // Redis에서 인증 값 제거 (인증 완료)
@@ -270,15 +266,15 @@ public class UserServiceImpl implements UserService {
 
         // TODO: isBlank vs isEmpty 하나로 통일
         if(StringUtils.isBlank(oldPw) || !passwordEncoder.matches(oldPw, user.getAccountPw())) {
-            throw new OriginPasswordIncorrect(messageSource.getMessage("error.user-pw.incorrect", null, locale));
+            throw new OriginPasswordIncorrect(messageSourceHolder.getMessage("error.user-pw.incorrect", null, locale));
         }
 
         if(!userPw.equals(userPw2)) {
-            throw new UserPwPw2DifferentException(messageSource.getMessage("error.pw-pw2.different", null, locale));
+            throw new UserPwPw2DifferentException(messageSourceHolder.getMessage("error.pw-pw2.different", null, locale));
         }
 
         if(oldPw.equals(userPw)) {
-            throw new AlreadyUsingPassword(messageSource.getMessage("error.pw.already-using", null, locale));
+            throw new AlreadyUsingPassword(messageSourceHolder.getMessage("error.pw.already-using", null, locale));
         }
 
         user.changeUserPassword(passwordEncoder.encode(userPw), clockHolder);
@@ -297,7 +293,7 @@ public class UserServiceImpl implements UserService {
 
         // 만약 이미 존재하는 사용자의 닉네임으로 변경할 경우 막음
         if(!isUserNicknameAvailable(userNickname)) {
-            throw new AlreadyUserNicknameExistsException(messageSource.getMessage("error.nickname.already-exist", null, locale));
+            throw new AlreadyUserNicknameExistsException(messageSourceHolder.getMessage("error.nickname.already-exist", null, locale));
         }
 
         // 사용자 닉네임 수정
@@ -311,13 +307,13 @@ public class UserServiceImpl implements UserService {
 
         // 실제로 존재하는 날짜인지 검사
         if(!DateUtil.isExistDate(userBirth)) {
-            throw new UserBirthDateNotExistsException(messageSource.getMessage("error.date.not-exist", null, locale));
+            throw new UserBirthDateNotExistsException(messageSourceHolder.getMessage("error.date.not-exist", null, locale));
         }
 
         // 나이가 너무 적은지 확인
         // TODO: 비정상적인 나이도 확인 ex: 300살
         if(!DateUtil.isOlderThanOrEqual(userBirth, minAge)) {
-            throw new UserYoungException(messageSource.getMessage("error.age.too-young", new Short[]{minAge}, locale));
+            throw new UserYoungException(messageSourceHolder.getMessage("error.age.too-young", new Short[]{minAge}, locale));
         }
 
         // 사용자 생년월일 수정
@@ -358,7 +354,7 @@ public class UserServiceImpl implements UserService {
             // 임시 파일 삭제
             file.delete();
         }catch(IOException e) {
-            throw new ChangeProfileImageFailureException(messageSource.getMessage("error.change-profile-image.fail", null, locale));
+            throw new ChangeProfileImageFailureException(messageSourceHolder.getMessage("error.change-profile-image.fail", null, locale));
         }
     }
 
@@ -417,7 +413,7 @@ public class UserServiceImpl implements UserService {
 
         // 파일이 존재하지 않는다면 에러 발생
         if(!isFileExistsInStorage(bucketName, s3FileFullPath)) {
-            throw new FileNotExistsException(messageSource.getMessage("error.file.not-exist", null, locale));
+            throw new FileNotExistsException(messageSourceHolder.getMessage("error.file.not-exist", null, locale));
         }
 
         // 임시 URL의 만료 시간 설정 (5분)
@@ -458,18 +454,18 @@ public class UserServiceImpl implements UserService {
 
         // 파일이 존재하는지 검사
         if(profileImage == null || profileImage.isEmpty()) {
-            throw new EmptyFileException(messageSource.getMessage("error.file.empty", null, locale));
+            throw new EmptyFileException(messageSourceHolder.getMessage("error.file.empty", null, locale));
         }
 
         long fileSize = profileImage.getSize();
 
         // 파일의 크기가 0MB 보다 크고 5MB 이하 인지 확인
         if(fileSize <= minFileMB * 1048576L || fileSize > maxFileMB * 1048576L) {
-            throw new FileSizeException(messageSource.getMessage("error.file-size.not-proper", new Short[]{minFileMB, maxFileMB}, locale));
+            throw new FileSizeException(messageSourceHolder.getMessage("error.file-size.not-proper", new Short[]{minFileMB, maxFileMB}, locale));
         }
 
         if( !allowedExtensions.contains( FilenameUtils.getExtension(profileImage.getOriginalFilename()) ) ) {
-            throw new BadFileExtensionException(messageSource.getMessage("error.file-extension-not-proper", new String[] {allowedExtensions.toString()}, locale));
+            throw new BadFileExtensionException(messageSourceHolder.getMessage("error.file-extension-not-proper", new String[] {allowedExtensions.toString()}, locale));
         }
 
     }

@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -52,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtProvider jwtProvider;
     private final MailSender mailSender;
     private final SmsSender smsSender;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final LocaleHolder localeHolder;
     private final VerificationCodeHolder verificationCodeHolder;
     private final TimeUnitHolder mailTimeUnitHolder;
@@ -70,12 +69,12 @@ public class AuthServiceImpl implements AuthService {
         if(!passwordEncoder.matches(loginRequest.getUserPw(), dbUser.getAccountPw())) {
             log.warn("Password is incorrect. userId={}", loginRequest.getUserId());
             throw new UnAuthenticatedException(
-                    messageSource.getMessage("error.user-id-pw.incorrect", null, localeHolder.getLocale())
+                    messageSourceHolder.getMessage("error.user-id-pw.incorrect", null, localeHolder.getLocale())
             );
         }
 
         if(dbUser.getStatus() == USER_STATUS.DELETED) {
-            throw new DeletedUserException(messageSource.getMessage("notice.deleted-user", null, localeHolder.getLocale()));
+            throw new DeletedUserException(messageSourceHolder.getMessage("notice.deleted-user", null, localeHolder.getLocale()));
         }
 
         // JWT Token 생성(Refresh, Access)
@@ -101,7 +100,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
         if(!userService.isUserIdAvailable(verificationCodeRequest.getEmail())) {
-            throw new AlreadyUserEmailExistsException(messageSource.getMessage("error.email.already-exist", null, locale));
+            throw new AlreadyUserEmailExistsException(messageSourceHolder.getMessage("error.email.already-exist", null, locale));
         }
 
         redisTemplate.execute(new SessionCallback<List<Object>>() {
@@ -117,8 +116,8 @@ public class AuthServiceImpl implements AuthService {
                     operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getEmail(), verificationCode, emailVerificationValidMinute, mailTimeUnitHolder.getTimeUnit());
 
                     // TODO: 이메일의 내용에 해당 인증 코드의 만료시간을 공지해야 함
-                    String emailSubject = messageSource.getMessage("email.verification.subject", null, locale);
-                    String emailBody = messageSource.getMessage("email.verification.body", new String[]{verificationCode, String.valueOf(emailVerificationValidMinute)}, locale);
+                    String emailSubject = messageSourceHolder.getMessage("email.verification.subject", null, locale);
+                    String emailBody = messageSourceHolder.getMessage("email.verification.body", new String[]{verificationCode, String.valueOf(emailVerificationValidMinute)}, locale);
                     // 사용자에게 이메일 전송
                     mailSender.sendRawEmail(List.of(verificationCodeRequest.getEmail()), emailSubject, emailBody);
 
@@ -142,7 +141,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 만약 이미 회원가입된 사용자 중 동일한 이메일이 존재한다면 실패로 처리
         if(!userService.isUserPhoneAvailable(verificationCodeRequest.getPhone())) {
-            throw new AlreadyUserPhoneExistsException(messageSource.getMessage("error.phone.already-exist", null, locale));
+            throw new AlreadyUserPhoneExistsException(messageSourceHolder.getMessage("error.phone.already-exist", null, locale));
         }
 
         redisTemplate.execute(new SessionCallback<List<Object>>() {
@@ -159,7 +158,7 @@ public class AuthServiceImpl implements AuthService {
                     operations.opsForValue().set("verificationCode_" + verificationCodeRequest.getPhone(), verificationCode, phoneVerificationValidMinute, phoneTimeUnitHolder.getTimeUnit());
 
                     // TODO: SMS의 내용에 해당 인증 코드의 만료시간을 공지해야 함
-                    String smsBody = messageSource.getMessage("phone.verification.body", new String[]{verificationCode}, locale);
+                    String smsBody = messageSourceHolder.getMessage("phone.verification.body", new String[]{verificationCode}, locale);
 
                     // SMS 전송
                     smsSender.sendOneMessage(verificationCodeRequest.getPhone(), smsBody);
@@ -168,7 +167,7 @@ public class AuthServiceImpl implements AuthService {
                 }catch(Exception e) {
                     log.error("Failed to send verification code", e);
                     operations.discard();
-                    throw new SendSMSFailureException(messageSource.getMessage("error.send-sms.fail", new String[]{verificationCodeRequest.getPhone()}, locale));
+                    throw new SendSMSFailureException(messageSourceHolder.getMessage("error.send-sms.fail", new String[]{verificationCodeRequest.getPhone()}, locale));
                 }
             }
         });
@@ -184,7 +183,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 사용자가 보낸 인증코드와 Redis에 저장된 인증 코드가 동일한지 확인
         if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
-            throw new BadVerificationCodeException(messageSource.getMessage("error.email-verification-code.incorrect", null, locale));
+            throw new BadVerificationCodeException(messageSourceHolder.getMessage("error.email-verification-code.incorrect", null, locale));
         }
 
         // Redis 데이터 제거
@@ -201,7 +200,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 사용자가 보낸 인증코드와 Redis에 저장된 인증 코드가 동일한지 확인
         if(StringUtils.isEmpty(verificationCode) || !verificationCode.equals(verificationCodeRequest.getVerificationCode())) {
-            throw new BadVerificationCodeException(messageSource.getMessage("error.phone-verification-code.incorrect", null, locale));
+            throw new BadVerificationCodeException(messageSourceHolder.getMessage("error.phone-verification-code.incorrect", null, locale));
         }
 
         // 사용자 휴대전화 번호 변경

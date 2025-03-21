@@ -10,7 +10,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +27,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 public class ExceptionRestController {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final LocaleHolder localeHolder;
 
     @ResponseStatus(value = HttpStatus.UNAUTHORIZED)
@@ -84,7 +84,7 @@ public class ExceptionRestController {
 
         ValidationException exception = objectMapper.readValue(errStr, ValidationException.class);;
 
-        String errMsg = messageSource.getMessage(exception.getErrCode(), exception.getParams(), localeHolder.getLocale());
+        String errMsg = messageSourceHolder.getMessage(exception.getErrCode(), exception.getParams(), localeHolder.getLocale());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ExceptionResponse(HttpStatus.BAD_REQUEST.getReasonPhrase(), errMsg));
@@ -101,7 +101,7 @@ public class ExceptionRestController {
             exception = new ValidationException(errStr, null);
         }
 
-        String errMsg = messageSource.getMessage(exception.getErrCode(), exception.getParams(), localeHolder.getLocale());
+        String errMsg = messageSourceHolder.getMessage(exception.getErrCode(), exception.getParams(), localeHolder.getLocale());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ExceptionResponse(HttpStatus.BAD_REQUEST.getReasonPhrase(), errMsg));
@@ -254,7 +254,7 @@ public class ExceptionRestController {
         log.warn(e.getClass().getName());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                        messageSource.getMessage("error.common.500", null, localeHolder.getLocale())
+                        messageSourceHolder.getMessage("error.common.500", null, localeHolder.getLocale())
                 ));
     }
 

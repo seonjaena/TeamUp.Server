@@ -7,7 +7,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import org.springframework.context.annotation.Primary;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -21,7 +21,7 @@ import java.util.List;
 public class SmtpMailSender implements MailSender {
 
     private final JavaMailSender mailSender;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final LocaleHolder localeHolder;
 
     @Value("${spring.mail.from}")
@@ -42,7 +42,7 @@ public class SmtpMailSender implements MailSender {
         }catch(Exception e) {
             log.error(e.getMessage());
             throw new SendEmailFailureException(
-                    messageSource.getMessage("error.send-email.fail",
+                    messageSourceHolder.getMessage("error.send-email.fail",
                             new String[] {to.toString()},
                             localeHolder.getLocale()
                     )

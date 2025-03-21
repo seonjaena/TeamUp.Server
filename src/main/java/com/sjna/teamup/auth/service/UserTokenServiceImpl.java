@@ -8,11 +8,11 @@ import com.sjna.teamup.common.domain.exception.RefreshTokenNotFoundException;
 import com.sjna.teamup.common.domain.exception.UnAuthenticatedException;
 import com.sjna.teamup.common.security.JwtProvider;
 import com.sjna.teamup.common.service.port.LocaleHolder;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import com.sjna.teamup.common.util.StringUtil;
 import com.sjna.teamup.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.security.NoSuchAlgorithmException;
@@ -26,7 +26,7 @@ public class UserTokenServiceImpl implements UserTokenService {
 
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     private final JwtProvider jwtProvider;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final LocaleHolder localeHolder;
 
     @Transactional
@@ -46,7 +46,7 @@ public class UserTokenServiceImpl implements UserTokenService {
         }catch(RefreshTokenNotFoundException e) {
             log.warn(e.getMessage());
             throw new UnAuthenticatedException(
-                    messageSource.getMessage("notice.re-login.request", null, localeHolder.getLocale())
+                    messageSourceHolder.getMessage("notice.re-login.request", null, localeHolder.getLocale())
             );
         }
 

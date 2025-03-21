@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,7 +25,7 @@ import java.io.IOException;
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
     private final ObjectMapper objectMapper;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
@@ -38,7 +38,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         response.getWriter()
                 .write(objectMapper.writeValueAsString(
                         new ExceptionResponse("Unauthorized",
-                                messageSource.getMessage("error.common.403", null, request.getLocale())
+                                messageSourceHolder.getMessage("error.common.403", null, request.getLocale())
                         )
                 ));
     }

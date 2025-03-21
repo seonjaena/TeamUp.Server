@@ -13,7 +13,7 @@ import com.sjna.teamup.user.controller.port.UserService;
 import com.sjna.teamup.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final UserService userService;
     private final ResumeRepository resumeRepository;
     private final ResumeLanguageRepository resumeLanguageRepository;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final LocaleHolder localeHolder;
 
     @Transactional
@@ -70,7 +70,7 @@ public class ResumeServiceImpl implements ResumeService {
         }catch(ResumeNotFoundException e) {
             log.warn(e.getMessage());
             throw new ResumeNotFoundException(
-                    messageSource.getMessage("error.resume.not-found", null, localeHolder.getLocale()));
+                     messageSourceHolder.getMessage("error.resume.not-found", null, localeHolder.getLocale()));
         }
 
         List<ResumeLanguage> resumeLanguages = resumeLanguageRepository.findAllByResume(resume);

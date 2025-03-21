@@ -5,9 +5,9 @@ import com.sjna.teamup.auth.domain.UserRole;
 import com.sjna.teamup.auth.service.port.UserRoleRepository;
 import com.sjna.teamup.common.domain.exception.UserRoleNotExistException;
 import com.sjna.teamup.common.service.port.LocaleHolder;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import java.util.Arrays;
@@ -20,14 +20,14 @@ public class UserRoleServiceImpl implements UserRoleService {
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final UserRoleRepository userRoleRepository;
     private final LocaleHolder localeHolder;
 
     public UserRole getBasic() {
         return userRoleRepository.findAll(Sort.by(Sort.Direction.DESC, "priority")).stream().findFirst()
                 .orElseThrow(() -> new UserRoleNotExistException(
-                        messageSource.getMessage("error.common.500", null, localeHolder.getLocale())
+                        messageSourceHolder.getMessage("error.common.500", null, localeHolder.getLocale())
                 ));
     }
 

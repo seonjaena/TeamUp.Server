@@ -9,7 +9,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import javax.crypto.SecretKey;
@@ -24,7 +24,7 @@ public class JwtProvider {
 
     private final Key key;
     private final Header header;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final LocaleHolder localeHolder;
     private final static String AUTHORIZATION_HEADER = "Authorization";
     private final static String BEARER_PREFIX = "Bearer";
@@ -36,8 +36,8 @@ public class JwtProvider {
     @Value("${jwt.expire.refresh}")
     private Long refreshTokenExpireMilliSec;
 
-    public JwtProvider(@Value("${jwt.secret}") String secretKey, MessageSource messageSource, LocaleHolder localeHolder) {
-        this.messageSource = messageSource;
+    public JwtProvider(@Value("${jwt.secret}") String secretKey, MessageSourceHolder messageSourceHolder, LocaleHolder localeHolder) {
+        this.messageSourceHolder = messageSourceHolder;
         this.localeHolder = localeHolder;
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
@@ -83,14 +83,14 @@ public class JwtProvider {
         // token에 userId 정보가 있는지 확인 & 만료되지 않았는지 확인
         if(!StringUtils.hasText(userId) || claims.getExpiration().before(new Date())) {
             throw new UnAuthenticatedException(
-                    messageSource.getMessage("notice.re-login.request", null, localeHolder.getLocale())
+                    messageSourceHolder.getMessage("notice.re-login.request", null, localeHolder.getLocale())
             );
         }
 
         // token에 사용자 권한에 대한 정보가 있는지 확인
         if(claims.get(ROLES) == null) {
             throw new UnAuthorizedException(
-                    messageSource.getMessage("notice.re-login.request", null, localeHolder.getLocale())
+                    messageSourceHolder.getMessage("notice.re-login.request", null, localeHolder.getLocale())
             );
         }
     }
@@ -150,7 +150,7 @@ public class JwtProvider {
     public Claims parseClaims(String token) {
         if(!StringUtils.hasText(token)) {
             throw new UnAuthenticatedException(
-                    messageSource.getMessage("notice.re-login.request", null, localeHolder.getLocale())
+                    messageSourceHolder.getMessage("notice.re-login.request", null, localeHolder.getLocale())
             );
         }
         return Jwts.parser()

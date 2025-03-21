@@ -8,7 +8,7 @@ import com.sjna.teamup.common.service.port.MailSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.List;
 public class SesMailSender implements MailSender {
 
     private final AmazonSimpleEmailService amazonSimpleEmailService;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
     private final LocaleHolder localeHolder;
 
     @Value("${cloud.aws.ses.send-email}")
@@ -50,7 +50,7 @@ public class SesMailSender implements MailSender {
         }catch(AmazonSimpleEmailServiceException e) {
             log.error(e.getMessage());
             throw new SendEmailFailureException(
-                    messageSource.getMessage("error.send-email.fail",
+                    messageSourceHolder.getMessage("error.send-email.fail",
                             new String[] {to.toString()},
                             localeHolder.getLocale()
                     )

@@ -12,7 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
+import com.sjna.teamup.common.service.port.MessageSourceHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,7 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final LocaleHolder localeHolder;
     private final UserService userService;
     private final JwtProvider jwtProvider;
-    private final MessageSource messageSource;
+    private final MessageSourceHolder messageSourceHolder;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
@@ -46,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }catch(UserIdNotFoundException e) {
             log.warn(e.getMessage());
             // 부정한 방법으로 접속하는 사용자에게 정보를 주지 않기 위해 다른 예외로 바꿔서 throw
-            throw new UnAuthenticatedException(messageSource.getMessage("notice.re-login.request", null, localeHolder.getLocale()));
+            throw new UnAuthenticatedException(messageSourceHolder.getMessage("notice.re-login.request", null, localeHolder.getLocale()));
         }
 
         chain.doFilter(request, response);
