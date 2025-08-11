@@ -44,3 +44,4 @@ gradle
 
 tmp
 local-running-files
+.DS_Store
